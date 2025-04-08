@@ -62,6 +62,36 @@ class UsuarioController extends Controller
     }
 
 
+    public function update(Request $request, $id)
+{
+    try {
+        // Localiza o usuário
+        $user = User::findOrFail($id);
+
+        // Validação
+        $validatedData = $request->validate([
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|string|email|max:255',
+            'telefone' => 'required|string|max:20',
+            // CPF não é alterado, pois está readonly
+        ]);
+
+        // Atualiza somente os campos validados
+        $user->update($validatedData);
+
+        // Redireciona de volta com mensagem de sucesso (flash message)
+        return redirect()->back()->with('success', 'Usuário atualizado com sucesso!');
+    } catch (\Exception $e) {
+        // Em caso de algum erro inesperado
+        return redirect()->back()->with('error', 'Ocorreu um erro ao atualizar o usuário.');
+    }
+}
+
+
+
+
+
+
     public function delete($id)
     {
         // Carrega o usuário pelo ID

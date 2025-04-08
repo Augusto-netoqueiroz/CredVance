@@ -26,6 +26,7 @@ Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.ind
 Route::get('/usuarios/cadastrar', [UsuarioController::class, 'create'])->name('usuarios.create');
 Route::post('/cadastrar/salvar', [UsuarioController::class, 'store'])->name('usuarios.store');
 Route::post('/usuarios/{id}/delete', [UsuarioController::class, 'delete'])->name('usuarios.delete');
+Route::patch('/usuario/{id}', [UsuarioController::class, 'update'])->name('usuario.update');
 
 
 Route::get('/dashboard', function () {
