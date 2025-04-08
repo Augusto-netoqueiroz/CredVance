@@ -17,38 +17,38 @@
 }
 
 /* 
-   PALETA DE CORES AJUSTADA
-   ------------------------
-   Aqui você pode alterar as cores para combinar com a imagem/padrão desejado.
+   Paleta de Cores Azul e Branco
 */
 :root {
   /* Cores Globais */
   --background-color: #0A1A2E; /* Fundo padrão do site */
   --default-color: #FFFFFF;    /* Cor base do texto */
-  --heading-color: #00A7E7;    /* Cor de títulos e destaques */
-  --accent-color: #00A7E7;     /* Cor de destaque (botões, links etc.) */
-  --surface-color: #142B48;    /* Cor de superfície para “cards” e áreas internas */
-  --contrast-color: #FFFFFF;   /* Cor de contraste (texto sobre accent-color) */
+  --heading-color: #00A7E7;    /* Cor de títulos */
+  --accent-color: #00A7E7;     /* Cor de destaque (botões, links, etc.) */
+  --surface-color: #142B48;    /* Cor de superfície para caixas/cards */
+  --contrast-color: #FFFFFF;   /* Cor de contraste em cima do accent-color */
 }
 
 /* Cores do Menu de Navegação */
 :root {
-  --nav-color: #ffffff;                    /* Cor padrão dos links do menu */
-  --nav-hover-color: #00A7E7;              /* Cor do link ao passar o mouse */
-  --nav-mobile-background-color: #0A1A2E;   /* Fundo do menu mobile */
-  --nav-dropdown-background-color: #142B48; /* Fundo dos dropdowns no menu */
-  --nav-dropdown-color: #ffffff;           /* Cor dos links do dropdown */
-  --nav-dropdown-hover-color: #00A7E7;     /* Cor do link dropdown ao hover */
+  --nav-color: #ffffff;                     /* Cor padrão dos links do menu */
+  --nav-hover-color: #00A7E7;               /* Cor do link ao hover */
+  --nav-mobile-background-color: #0A1A2E;    /* Fundo do menu mobile */
+  --nav-dropdown-background-color: #142B48;  /* Fundo do dropdown */
+  --nav-dropdown-color: #ffffff;            /* Cor dos links do dropdown */
+  --nav-dropdown-hover-color: #00A7E7;      /* Cor do link dropdown ao hover */
 }
 
-/* Classes de background claro/escuro */
+/* Fundo claro (opcional) */
 .light-background {
   --background-color: #f1f4fa;
-  --surface-color: #ffffff;
-  --default-color: #444444;   /* Texto escuro em fundo claro */
+  --default-color: #444444;
   --heading-color: #273d4e;
+  --surface-color: #ffffff;
+  --contrast-color: #000000;
 }
 
+/* Fundo escuro */
 .dark-background {
   --background-color: #0A1A2E;
   --default-color: #ffffff;
@@ -78,6 +78,7 @@ a {
 }
 
 a:hover {
+  /* Se preferir, pode usar direto #00BBF0 ou algo fixo */
   color: color-mix(in srgb, var(--accent-color), transparent 25%);
   text-decoration: none;
 }
@@ -92,8 +93,9 @@ h6 {
   font-family: var(--heading-font);
 }
 
-/* PHP Email Form Messages
-------------------------------*/
+/*--------------------------------------------------------------
+# PHP Email Form Messages
+--------------------------------------------------------------*/
 .php-email-form .error-message {
   display: none;
   background: #df1529;
@@ -143,8 +145,9 @@ h6 {
   }
 }
 
-/* Pulsating Play Button
-------------------------------*/
+/*--------------------------------------------------------------
+# Pulsating Play Button
+--------------------------------------------------------------*/
 .pulsating-play-btn {
   width: 94px;
   height: 94px;
@@ -173,6 +176,17 @@ h6 {
   background: rgba(198, 16, 0, 0);
 }
 
+@keyframes pulsate-play-btn {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
 .pulsating-play-btn:after {
   content: "";
   position: absolute;
@@ -188,24 +202,8 @@ h6 {
   transition: all 400ms cubic-bezier(0.55, 0.055, 0.675, 0.19);
 }
 
-@keyframes pulsate-play-btn {
-  0% {
-    transform: scale(0.6, 0.6);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1, 1);
-    opacity: 0;
-  }
-}
-
-.pulsating-play-btn:hover:before {
-  animation: none;
-  border: none;
-}
-
 /*--------------------------------------------------------------
-# Global Header
+# Header
 --------------------------------------------------------------*/
 .header {
   --background-color: rgba(0, 0, 0, 0);
@@ -271,7 +269,7 @@ h6 {
   box-shadow: 0px 0 18px rgba(0, 0, 0, 0.1);
 }
 
-/* Global Header on Scroll */
+/* Background do header ao rolar a página */
 .scrolled .header {
   --background-color: rgba(21, 34, 43, 0.85);
 }
@@ -352,9 +350,10 @@ h6 {
   .navmenu li:hover > a,
   .navmenu .active,
   .navmenu .active:focus {
-    color: color-mix(in srgb, var(--nav-color) 90%, white 15%);
+    color: color-mix(in srgb, var(--nav-color), white 15%);
   }
 
+  /* Dropdown */
   .navmenu .dropdown ul {
     margin: 0;
     padding: 10px 0;
@@ -533,7 +532,7 @@ h6 {
 }
 
 /*--------------------------------------------------------------
-# Global Footer
+# Footer
 --------------------------------------------------------------*/
 .footer {
   color: var(--default-color);
@@ -771,7 +770,7 @@ h6 {
 }
 
 /*--------------------------------------------------------------
-# Global Page Titles & Breadcrumbs
+# Page Titles & Breadcrumbs
 --------------------------------------------------------------*/
 .page-title {
   color: var(--default-color);
@@ -808,11 +807,11 @@ h6 {
   font-weight: 400;
 }
 
-.page-title .breadcrumbs ol li + li {
+.page-title .breadcrumbs ol li+li {
   padding-left: 10px;
 }
 
-.page-title .breadcrumbs ol li + li::before {
+.page-title .breadcrumbs ol li+li::before {
   content: "/";
   display: inline-block;
   padding-right: 10px;
@@ -839,7 +838,7 @@ section,
 }
 
 /*--------------------------------------------------------------
-# Global Section Titles
+# Section Titles
 --------------------------------------------------------------*/
 .section-title {
   padding-bottom: 60px;
@@ -1013,16 +1012,6 @@ section,
   color: var(--accent-color);
 }
 
-.about .content p:last-child {
-  margin-bottom: 0;
-}
-
-.about .pulsating-play-btn {
-  position: absolute;
-  left: calc(50% - 47px);
-  top: calc(50% - 47px);
-}
-
 /*--------------------------------------------------------------
 # Stats Section
 --------------------------------------------------------------*/
@@ -1128,10 +1117,6 @@ section,
 }
 
 /*--------------------------------------------------------------
-# (As demais seções - Clients, Features, Services 2, etc. - permanecem, caso ainda existam no projeto)
---------------------------------------------------------------*/
-
-/*--------------------------------------------------------------
 # Contact Section
 --------------------------------------------------------------*/
 .contact .info-item {
@@ -1149,24 +1134,16 @@ section,
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 4px;
-  transition: all 0.3s ease-in-out;
   border-radius: 50%;
+  transition: all 0.3s ease-in-out;
   border: 2px dotted color-mix(in srgb, var(--accent-color), transparent 40%);
 }
 
 .contact .info-item h3 {
   font-size: 20px;
   color: color-mix(in srgb, var(--default-color), transparent 20%);
-  font-size: 18px;
   font-weight: 700;
   margin: 10px 0;
-}
-
-.contact .info-item p {
-  padding: 0;
-  margin-bottom: 0;
-  font-size: 14px;
 }
 
 .contact .php-email-form {
@@ -1211,16 +1188,4 @@ section,
 
 .contact .php-email-form button[type=submit]:hover {
   background: color-mix(in srgb, var(--accent-color), transparent 20%);
-}
-
-/*--------------------------------------------------------------
-# Portfolio / Service Details (caso existam)
---------------------------------------------------------------*/
-/* ... (demais estilos permanecem) ... */
-
-/*--------------------------------------------------------------
-# Starter Section Section
---------------------------------------------------------------*/
-.starter-section {
-  /* Add your custom styles if needed */
 }

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
@@ -24,10 +25,10 @@
   <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
   <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
 
-  <!-- Main CSS File -->
+  <!-- Main CSS File (com paleta azul/branco) -->
   <link href="assets/css/main.css" rel="stylesheet">
-
 </head>
+
 <body class="index-page">
 
   <!-- ======= Header ======= -->
@@ -59,7 +60,7 @@
 
   <main class="main">
 
-    <!-- ======= Hero Section ======= -->
+    <!-- ======= Hero Section (Fundo escuro) ======= -->
     <section id="hero" class="hero section dark-background">
       <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
       <div class="container d-flex flex-column align-items-center">
@@ -77,8 +78,8 @@
     </section>
     <!-- End Hero Section -->
 
-    <!-- ======= Sobre (About) Section ======= -->
-    <section id="about" class="about section">
+    <!-- ======= Sobre Section (Fundo claro) ======= -->
+    <section id="about" class="about section light-background">
       <div class="container">
         <div class="row gy-4">
           <div class="col-lg-6" data-aos="fade-up" data-aos-delay="100">
@@ -89,41 +90,22 @@
               e conquistar o seu bem sem pagar juros, oferecendo planos
               flexíveis e atendimento personalizado.
             </p>
-            <p>
-              Tenha acesso a um sistema seguro e transparente, em que você 
-              participa de assembleias mensais e concorre a contemplações. 
-              Tudo isso com as melhores taxas de administração do mercado.
-            </p>
           </div>
           <div class="col-lg-6" data-aos="fade-up" data-aos-delay="250">
-            <div class="content ps-0 ps-lg-5">
+            <div class="content">
               <p class="fst-italic">
                 Conquistar seu carro, moto, imóvel ou serviço é mais fácil
                 quando você conta com o consórcio certo.
               </p>
               <ul>
-                <li>
-                  <i class="bi bi-check-circle-fill"></i>
-                  Planos acessíveis para diferentes objetivos.
-                </li>
-                <li>
-                  <i class="bi bi-check-circle-fill"></i>
-                  Sem entrada e sem taxa de adesão.
-                </li>
-                <li>
-                  <i class="bi bi-check-circle-fill"></i>
-                  Equipe dedicada e suporte em todas as etapas do consórcio.
-                </li>
+                <li><i class="bi bi-check-circle-fill"></i> Planos acessíveis</li>
+                <li><i class="bi bi-check-circle-fill"></i> Sem taxa de adesão</li>
+                <li><i class="bi bi-check-circle-fill"></i> Equipe dedicada 24h</li>
               </ul>
               <p>
                 Conte com a Cred Vance para tornar seus projetos realidade. 
                 Quer saber mais? Assista ao vídeo ou fale conosco!
               </p>
-
-              <div class="position-relative mt-4">
-                <img src="assets/img/about-2.jpg" class="img-fluid rounded-4" alt="">
-                <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox pulsating-play-btn"></a>
-              </div>
             </div>
           </div>
         </div>
@@ -131,62 +113,8 @@
     </section>
     <!-- End Sobre Section -->
 
-    <!-- ======= Estatísticas (Stats) Section ======= -->
-    <section id="stats" class="stats section light-background">
-      <div class="container" data-aos="fade-up" data-aos-delay="100">
-        <div class="row gy-4">
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-emoji-smile color-blue flex-shrink-0"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="232" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Clientes Satisfeitos</p>
-              </div>
-            </div>
-          </div>
-          <!-- End Stats Item -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-journal-richtext color-orange flex-shrink-0"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="521" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Planos Ativos</p>
-              </div>
-            </div>
-          </div>
-          <!-- End Stats Item -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-headset color-green flex-shrink-0"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="1463" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Horas de Suporte</p>
-              </div>
-            </div>
-          </div>
-          <!-- End Stats Item -->
-
-          <div class="col-lg-3 col-md-6">
-            <div class="stats-item d-flex align-items-center w-100 h-100">
-              <i class="bi bi-people color-pink flex-shrink-0"></i>
-              <div>
-                <span data-purecounter-start="0" data-purecounter-end="15" data-purecounter-duration="1" class="purecounter"></span>
-                <p>Anos de Mercado</p>
-              </div>
-            </div>
-          </div>
-          <!-- End Stats Item -->
-
-        </div>
-      </div>
-    </section>
-    <!-- End Estatísticas Section -->
-
-    <!-- ======= Planos (Services) Section ======= -->
-    <section id="services" class="services section">
+    <!-- ======= Planos (Services) Section (Fundo claro) ======= -->
+    <section id="services" class="services section light-background">
       <div class="container section-title" data-aos="fade-up">
         <h2>Planos</h2>
         <p>Confira nossas principais opções de consórcio</p>
@@ -194,22 +122,24 @@
 
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-5">
-
-          <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="200">
-            <div class="service-item">
-              <div class="img">
-                <img src="assets/img/services-1.jpg" class="img-fluid" alt="">
-              </div>
-              <div class="details position-relative">
-                <div class="icon">
-                  <i class="bi bi-activity"></i>
-                </div>
-                <h3>Consórcio de Veículos</h3>
-                <p>
-                  Planos flexíveis para você conquistar seu carro ou moto
-                  sem pagar juros. 
-                </p>
-              </div>
+        <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="200">
+  <div class="service-item" 
+       onclick="window.location.href='/Service';" 
+       style="cursor: pointer;">
+    <div class="img">
+      <img src="assets/img/services-1.jpg" class="img-fluid" alt="">
+    </div>
+    <div class="details position-relative">
+      <div class="icon">
+        <i class="bi bi-activity"></i>
+      </div>
+      <h3>Simulador de Parcela</h3>
+      <p>
+        Simule já a sua parcela de forma Fácil e Rápida.
+      </p>
+    </div>
+  
+ 
             </div>
           </div>
           <!-- End Service Item -->
@@ -225,8 +155,7 @@
                 </div>
                 <h3>Consórcio Imobiliário</h3>
                 <p>
-                  Realize o sonho da casa própria por meio de grupos
-                  consolidados e suporte especializado.
+                  Realize o sonho da casa própria por meio de grupos consolidados.
                 </p>
               </div>
             </div>
@@ -244,88 +173,92 @@
                 </div>
                 <h3>Outros Serviços</h3>
                 <p>
-                  Consórcio para viagens, reformas, tratamentos ou o que
-                  você precisar – tudo sem juros.
+                  Viajem, reformas, tratamentos... Tudo via consórcio, sem juros e com segurança.
                 </p>
               </div>
             </div>
           </div>
           <!-- End Service Item -->
-
         </div>
       </div>
     </section>
     <!-- End Planos Section -->
 
-    <!-- ======= Contato (Contact) Section ======= -->
-    <section id="contact" class="contact section">
+    <!-- ======= Estatísticas Section (Fundo escuro) ======= -->
+    <section id="stats" class="stats section dark-background">
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div class="row gy-4">
+          <div class="col-lg-3 col-md-6">
+            <div class="stats-item d-flex align-items-center w-100 h-100">
+              <i class="bi bi-emoji-smile flex-shrink-0"></i>
+              <div>
+                <span data-purecounter-start="0" data-purecounter-end="232" data-purecounter-duration="1" class="purecounter"></span>
+                <p>Clientes Satisfeitos</p>
+              </div>
+            </div>
+          </div>
+          <!-- etc... -->
+        </div>
+      </div>
+    </section>
+    <!-- End Estatísticas Section -->
+
+    <!-- ======= Contato (Contact) Section (Fundo escuro) ======= -->
+    <section id="contact" class="contact section dark-background">
       <div class="container section-title" data-aos="fade-up">
         <h2>Contato</h2>
         <p>Fale conosco para tirar suas dúvidas ou solicitar mais informações</p>
       </div>
-
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4">
           <div class="col-lg-6">
             <div class="row gy-4">
               <div class="col-lg-12">
-                <div class="info-item d-flex flex-column justify-content-center align-items-center" data-aos="fade-up" data-aos-delay="200">
+                <div class="info-item d-flex flex-column justify-content-center align-items-center">
                   <i class="bi bi-geo-alt"></i>
                   <h3>Endereço</h3>
-                  <p>R. Exemplo, 123 - Centro, São Paulo/SP</p>
+                  <p>R. Exemplo, 123 - São Paulo/SP</p>
                 </div>
               </div>
-              <!-- End Info Item -->
-
               <div class="col-md-6">
-                <div class="info-item d-flex flex-column justify-content-center align-items-center" data-aos="fade-up" data-aos-delay="300">
+                <div class="info-item d-flex flex-column justify-content-center align-items-center">
                   <i class="bi bi-telephone"></i>
                   <h3>Telefone</h3>
                   <p>+55 11 99999-9999</p>
                 </div>
               </div>
-              <!-- End Info Item -->
-
               <div class="col-md-6">
-                <div class="info-item d-flex flex-column justify-content-center align-items-center" data-aos="fade-up" data-aos-delay="400">
+                <div class="info-item d-flex flex-column justify-content-center align-items-center">
                   <i class="bi bi-envelope"></i>
                   <h3>Email</h3>
                   <p>contato@credvance.com.br</p>
                 </div>
               </div>
-              <!-- End Info Item -->
             </div>
           </div>
-
           <div class="col-lg-6">
-            <!-- Formulário de Contato -->
-            <form action="forms/contact.php" method="post" class="php-email-form" data-aos="fade-up" data-aos-delay="500">
+            <form action="forms/contact.php" method="post" class="php-email-form">
               <div class="row gy-4">
                 <div class="col-md-6">
                   <input type="text" name="name" class="form-control" placeholder="Seu Nome" required>
                 </div>
-
                 <div class="col-md-6">
                   <input type="email" class="form-control" name="email" placeholder="Seu Email" required>
                 </div>
-
                 <div class="col-md-12">
                   <input type="text" class="form-control" name="subject" placeholder="Assunto" required>
                 </div>
-
                 <div class="col-md-12">
                   <textarea class="form-control" name="message" rows="4" placeholder="Mensagem" required></textarea>
                 </div>
-
                 <div class="col-md-12 text-center">
                   <div class="loading">Enviando...</div>
                   <div class="error-message"></div>
-                  <div class="sent-message">Sua mensagem foi enviada com sucesso! Obrigado!</div>
+                  <div class="sent-message">Sua mensagem foi enviada com sucesso!</div>
                   <button type="submit">Enviar Mensagem</button>
                 </div>
               </div>
             </form>
-            <!-- End Contact Form -->
           </div>
         </div>
       </div>
@@ -348,7 +281,7 @@
             <p><strong>Email:</strong> contato@credvance.com.br</p>
           </div>
           <div class="social-links d-flex mt-4">
-            <a href="#"><i class="bi bi-twitter-x"></i></a>
+            <a href="#"><i class="bi bi-twitter"></i></a>
             <a href="#"><i class="bi bi-facebook"></i></a>
             <a href="#"><i class="bi bi-instagram"></i></a>
             <a href="#"><i class="bi bi-linkedin"></i></a>
@@ -368,17 +301,16 @@
 
         <div class="col-lg-6 col-md-12 footer-newsletter">
           <h4>Newsletter</h4>
-          <p>Receba nossas novidades e ofertas exclusivas diretamente no seu email!</p>
+          <p>Receba nossas novidades e ofertas exclusivas no seu email!</p>
           <form action="forms/newsletter.php" method="post" class="php-email-form">
             <div class="newsletter-form">
               <input type="email" name="email" placeholder="Seu email"><input type="submit" value="Assinar">
             </div>
             <div class="loading">Enviando...</div>
             <div class="error-message"></div>
-            <div class="sent-message">Você assinou nossa newsletter com sucesso!</div>
+            <div class="sent-message">Inscrição realizada com sucesso!</div>
           </form>
         </div>
-
       </div>
     </div>
 
@@ -396,7 +328,7 @@
     <i class="bi bi-arrow-up-short"></i>
   </a>
 
-  <!-- Preloader (opcional) -->
+  <!-- Preloader -->
   <div id="preloader"></div>
 
   <!-- Vendor JS Files -->

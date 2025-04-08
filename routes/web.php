@@ -16,6 +16,11 @@ route::get('/pagina', function () {
     return view('pagina');
 });
 
+//Template service - rota por enquanto
+route::get('/Service', function () {
+    return view('service');
+});
+
 
 Route::get('/login', [UsuarioController::class, 'loginForm'])->name('login');
 Route::post('/login', [UsuarioController::class, 'authenticate'])->name('login.authenticate');
