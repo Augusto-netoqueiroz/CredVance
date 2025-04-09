@@ -46,13 +46,14 @@
           <li><a href="#hero" class="active">Início</a></li>
           <li><a href="#about">Sobre</a></li>
           <li><a href="#services">Planos</a></li>
+          <li><a href="/Service">Simulador de Parcela</a></li>
           <li><a href="#stats">Estatísticas</a></li>
           <li><a href="#contact">Contato</a></li>
         </ul>
         <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
       </nav>
       <!-- Botão de Acesso ao Cliente -->
-      <a class="cta-btn" href="{{ route('login') }}">Área do Cliente</a>
+      <a class="cta-btn" href="{{ route('login') }}">Area do Cliente</a>
 
     </div>
   </header>
