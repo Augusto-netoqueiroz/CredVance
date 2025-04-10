@@ -14,6 +14,8 @@ class User extends Authenticatable
         'email',
         'cpf',
         'telefone',
+        'otp_code',
+        'otp_expires_at',
         'password',
         'role',
         'ativo',

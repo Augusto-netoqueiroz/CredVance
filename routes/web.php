@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\LandingRegisterController;
 
 
 
@@ -43,5 +44,18 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+
+Route::get('/landing', [LandingRegisterController::class, 'index'])->name('landing.page');
+
+// Recebe os dados do formulário de cadastro (POST), gera OTP e retorna a mesma view
+Route::post('/landing/register', [LandingRegisterController::class, 'submitRegister'])
+     ->name('landing.register.submit');
+
+// Recebe o OTP (POST) do modal, valida e confirma o email
+Route::post('/landing/verify-otp', [LandingRegisterController::class, 'verifyOtp'])
+     ->name('landing.register.verify');
+
+
 
 require __DIR__.'/auth.php';
