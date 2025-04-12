@@ -127,26 +127,34 @@ class LandingRegisterController extends Controller
 
 
     public function showResetPasswordFormCustom(Request $request)
-    {
-        // Verifica se o link possui assinatura válida e não expirou
-        if (!$request->hasValidSignature()) {
-            return redirect()->route('password.request')
-                             ->with('error', 'Link inválido ou expirado.');
-        }
-        
-        // Recupera o usuário a partir do parâmetro na URL (por exemplo, ?user=2)
-        $user = User::find($request->user);
-        if (!$user) {
-            return redirect()->route('password.request')
-                             ->with('error', 'Usuário não encontrado.');
-        }
-        
-        // Retorna a view de reset de senha, passando as variáveis necessárias
-        return view('auth.reset-password', [
-            'token' => '',         // Se você não utiliza um token real, passe vazio ou um valor fixo.
-            'email' => $user->email,
-        ]);
+{
+    // Verifica se existe usuário autenticado e desloga-o
+    if (Auth::check()) {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
     }
+
+    // Verifica assinatura válida e se não expirou
+    if (!$request->hasValidSignature()) {
+        return redirect()->route('password.request')
+                         ->with('error', 'Link inválido ou expirado.');
+    }
+
+    // Recupera o usuário da URL
+    $user = User::find($request->user);
+    if (!$user) {
+        return redirect()->route('password.request')
+                         ->with('error', 'Usuário não encontrado.');
+    }
+
+    // Exibe a view do formulário
+    return view('auth.reset-password', [
+        'token' => '', 
+        'email' => $user->email,
+    ]);
+}
+
     
 
 
