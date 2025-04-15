@@ -19,6 +19,8 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 
 
 
+//------------------inicio das rotas não protegidas-----------------// 
+
 
 //View inicial
 Route::get('/', function () {
@@ -42,6 +44,8 @@ route::get('/reset', function () {
 });
 
 
+
+
 //Template service - rota por enquanto
 //route::get('/register', function () {
     //return view('auth.register');
@@ -59,17 +63,49 @@ Route::get('/login', [UsuarioController::class, 'loginForm'])->name('login');
 Route::post('/login', [UsuarioController::class, 'authenticate'])->name('login.authenticate');
 
 
-//View creat
+//------------------Fim das rotas não protegidas-----------------// 
+ 
+Route::middleware('auth')->group(function () {
+    Route::get('/Inicio', [UsuarioController::class, 'ShowInicio'])->name('Inicio');
+});
+
+
+
+Route::middleware('auth')->group(function () {
 Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
 Route::get('/usuarios/cadastrar', [UsuarioController::class, 'create'])->name('usuarios.create');
 Route::post('/cadastrar/salvar', [UsuarioController::class, 'store'])->name('usuarios.store');
 Route::post('/usuarios/{id}/delete', [UsuarioController::class, 'delete'])->name('usuarios.delete');
 Route::patch('/usuario/{id}', [UsuarioController::class, 'update'])->name('usuario.update');
+});
 
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', function () {
+        // Verifica se o usuário logado tem role de admin
+        if (!auth()->user() || auth()->user()->role !== 'admin') {
+            abort(403, 'Acesso negado.');
+        }
+
+        return view('dashboard');
+    })->name('dashboard');
+});
+
+
+
+
+Route::get('/finalizar-cadastro', [LandingRegisterController::class, 'finishRegister'])
+     ->middleware('signed')
+     ->name('usuarios.finishRegister');
+
+     Route::post('/finalizar-cadastro/{user}', [LandingRegisterController::class, 'finishRegisterPost'])
+     ->name('usuarios.finishRegister.post');
+
+     Route::post('/usuarios/store-basic', [LandingRegisterController::class, 'storeBasicUser'])
+     ->name('usuarios.storeBasic');
+
+
+
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -138,10 +174,10 @@ Route::post('/reset-password', [LandingRegisterController::class, 'resetPassword
 
     //Route::post('register', [RegisteredUserController::class, 'store']);
 
-    Route::get('login', [AuthenticatedSessionController::class, 'create'])
-        ->name('login');
+    //Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        //->name('login');
 
-    Route::post('login', [AuthenticatedSessionController::class, 'store']);
+    //Route::post('login', [AuthenticatedSessionController::class, 'store']);
 
 
     Route::post('/forgot-password', [LandingRegisterController::class, 'sendResetPasswordLinkCustom'])

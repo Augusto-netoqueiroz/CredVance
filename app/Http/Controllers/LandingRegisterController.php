@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Password;
-
-// Importa a classe Mailable que usaremos para enviar o link de verificação (para cadastro)
 use App\Mail\VerificationMail;
+use App\Mail\FinalizeRegistrationMail;
+
 
 class LandingRegisterController extends Controller
 {
@@ -252,6 +252,84 @@ class LandingRegisterController extends Controller
                      ->with('success', 'Senha atualizada com sucesso! Você está logado.');
 }
 
+public function storeBasicUser(Request $request)
+{
+    // Valida dados etc...
+    $request->validate([
+        'name'     => 'required|max:255',
+        'email'    => 'required|email|unique:users,email',
+        'cpf'      => 'required|string|size:11|unique:users,cpf',
+        'telefone' => 'required|string|min:8',
+        'role'     => 'required|string',
+    ]);
 
+    $randomPassword = \Str::random(10); 
+    $user = User::create([
+        'name'              => $request->name,
+        'cpf'               => $request->cpf,
+        'telefone'          => $request->telefone,
+        'email'             => $request->email,
+        'role'              => $request->role,
+        'password'          => Hash::make($randomPassword),
+        'email_verified_at' => null,
+    ]);
+
+    $finishLink = URL::temporarySignedRoute(
+        'usuarios.finishRegister', 
+        now()->addMinutes(30),
+        ['user' => $user->id]
+    );
+
+    try {
+        // Envie o e-mail com o link
+        Mail::to($user->email)->send(new FinalizeRegistrationMail($finishLink));
+
+        // Se chegar até aqui, deu tudo certo.
+        return response()->json([
+            'message' => 'Usuário criado com sucesso e link de finalização enviado!'
+        ]);
+
+    } catch (\Exception $e) {
+        // Captura a exceção real do envio de email
+        \Log::error('Erro ao enviar e-mail: ' . $e->getMessage());
+
+        // Retorna 500 + a mensagem de erro (opcional)
+        return response()->json([
+            'message' => 'Usuário criado, mas ocorreu falha ao enviar e-mail: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function finishRegister(Request $request)
+{
+    if (!$request->hasValidSignature()) {
+        abort(401, 'Link inválido ou expirado.');
+    }
+
+    $user = User::findOrFail($request->user);
+
+    if ($user->email_verified_at) {
+        return redirect()->route('login')->with('info', 'Cadastro já foi finalizado anteriormente.');
+    }
+
+    // Mostra a view para o usuário definir a senha / finalizar cadastro
+    return view('auth.finish-register', compact('user'));
+}
+
+public function finishRegisterPost(Request $request, User $user)
+{
+    // Aqui você valida a nova senha e finaliza
+    $request->validate([
+        'password' => 'required|min:8|confirmed',
+    ]);
+
+    $user->password = Hash::make($request->password);
+    $user->email_verified_at = now();
+    $user->save();
+
+    // Autentica ou só redireciona
+    // Auth::login($user);
+    return redirect()->route('dashboard')->with('success', 'Cadastro finalizado!');
+}
 
 }

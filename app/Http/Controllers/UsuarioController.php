@@ -6,17 +6,25 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
+
 
 class UsuarioController extends Controller
 {
 
-    public function index()
+   // UsuarioController.php
+
+public function index()
 {
-    // Filtra para retornar apenas usuários que tenham 'ativo' = 1
-    $usuarios = User::where('ativo', 1)->get();
+    // Em vez disso:
+    // $usuarios = User::where('ativo', 1)->get();
+
+    // Faça assim para usar paginação:
+    $usuarios = User::where('ativo', 1)->paginate(10);
 
     return view('usuarios.index', compact('usuarios'));
 }
+
 
 
     public function create()
@@ -114,21 +122,29 @@ class UsuarioController extends Controller
     }
 
     public function authenticate(Request $request)
-    {
-        $credentials = $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string|min:6',
-        ]);
+{
+    $credentials = $request->validate([
+        'email'    => 'required|email',
+        'password' => 'required|string|min:6',
+    ]);
 
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate();
-            return redirect()->route('dashboard')->with('success', 'Login realizado com sucesso!');
+    if (Auth::attempt($credentials)) {
+        $request->session()->regenerate();
+
+        if (auth()->user()->role === 'admin') {
+            return redirect()->route('dashboard')
+                ->with('success', 'Login realizado com sucesso!');
+        } else {
+            return redirect()->route('Inicio')
+                ->with('success', 'Login realizado com sucesso!');
         }
-
-        return back()->withErrors([
-            'email' => 'As credenciais fornecidas não correspondem aos nossos registros.',
-        ])->onlyInput('email');
     }
+
+    return back()->withErrors([
+        'email' => 'As credenciais fornecidas não correspondem aos nossos registros.',
+    ])->onlyInput('email');
+}
+
 
     public function logout(Request $request)
     {
@@ -136,5 +152,12 @@ class UsuarioController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
         return redirect()->route('login')->with('success', 'Você saiu com sucesso!');
+    }
+
+
+    public function ShowInicio()
+    {
+        
+        return view('cliente.area');
     }
 }

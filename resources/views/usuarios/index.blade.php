@@ -1,3 +1,5 @@
+<!-- resources/views/usuarios/index.blade.php -->
+
 <!-- Carregando Bootstrap e Bootstrap Icons (caso ainda não tenha) -->
 <link
   rel="stylesheet"
@@ -57,7 +59,7 @@
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="overflow-x-auto">
-                <!-- Note 'dark:bg-gray-800' abaixo para a tabela -->
+                <!-- Tabela -->
                 <table class="table min-w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden text-base">
                     <thead class="bg-gray-100 dark:bg-gray-700">
                         <tr class="text-left text-gray-700 dark:text-gray-300">
@@ -97,25 +99,35 @@
                                         ✏️ Editar
                                     </button>
                                     <form action="{{ route('usuarios.delete', $user->id) }}" method="POST" style="display: inline-block;">
-                                    @csrf
-                                    <button
-                                        type="submit"
-                                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow"
-                                        onclick="return confirm('Tem certeza que deseja desabilitar este usuário?')"
-                                    >
-                                        🗑️ Deletar
-                                    </button>
-                                </form>
+                                        @csrf
+                                        <button
+                                            type="submit"
+                                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow"
+                                            onclick="return confirm('Tem certeza que deseja desabilitar este usuário?')"
+                                        >
+                                            🗑️ Deletar
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+
+                <!-- Links de Paginação -->
+                <div class="mt-4">
+                    <!-- Usando o estilo Bootstrap da paginação -->
+                    {{ $usuarios->links('pagination::bootstrap-5') }}
+                    
+                    <!-- Se preferir o estilo nativo do Laravel (Tailwind), comente a linha acima
+                         e use apenas: -->
+                    {{-- {{ $usuarios->links() }} --}}
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para criar Novo Usuário -->
+    <!-- Modal para criar Novo Usuário (sem campos de senha) -->
     <div id="modalUsuario" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-1/3">
             <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Novo Usuário</h3>
@@ -187,53 +199,12 @@
                       required
                       class="form-select rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     >
-                        <option value="usuario">Cliente</option>
+                        <option value="cliente">Cliente</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
 
-                <!-- Campo Senha (input-group do Bootstrap para ícone olho) -->
-                <div class="mt-3">
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">Senha:</label>
-                    <div class="input-group">
-                        <input
-                          id="password"
-                          name="password"
-                          type="password"
-                          required
-                          class="form-control"
-                        />
-                        <button
-                          class="btn btn-outline-secondary"
-                          type="button"
-                          onclick="togglePassword('password', this)"
-                        >
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Confirmar Senha -->
-                <div class="mt-3">
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">Confirmar Senha:</label>
-                    <div class="input-group">
-                        <input
-                          id="password_confirmation"
-                          name="password_confirmation"
-                          type="password"
-                          required
-                          class="form-control"
-                        />
-                        <button
-                          class="btn btn-outline-secondary"
-                          type="button"
-                          onclick="togglePassword('password_confirmation', this)"
-                        >
-                            <i class="bi bi-eye"></i>
-                        </button>
-                    </div>
-                </div>
-
+                <!-- Botões do Modal -->
                 <div class="mt-4 flex justify-end">
                     <button
                       type="button"
@@ -273,7 +244,7 @@
 
         // Remove pontuação do CPF
         function limparPontuacaoCPF(cpf) {
-            return cpf.replace(/\\D/g, '');
+            return cpf.replace(/\D/g, '');
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -286,13 +257,11 @@
                     telefone: document.getElementById('telefone').value,
                     email: document.getElementById('email').value,
                     role: document.getElementById('role').value,
-                    password: document.getElementById('password').value,
-                    password_confirmation: document.getElementById('password_confirmation').value,
                 };
 
                 try {
-                    await axios.post("{{ route('usuarios.store') }}", data);
-                    alert('Usuário criado com sucesso!');
+                    await axios.post("{{ route('usuarios.storeBasic') }}", data);
+                    alert('Usuário criado! Ele receberá um e-mail para finalizar o cadastro.');
                     location.reload();
                 } catch (error) {
                     if (error.response && error.response.status === 422) {
