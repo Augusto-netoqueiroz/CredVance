@@ -10,9 +10,8 @@
   href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
 />
 
-<!-- Sobrescrevendo estilos no modo escuro -->
+<!-- Sobrescrevendo estilos no modo escuro (Tailwind classes) -->
 <style>
-/* Força a navbar a ficar escura no modo dark */
 .dark .navbar,
 .dark .navbar-nav,
 .dark .navbar-light,
@@ -21,7 +20,6 @@
   color: #f9fafb !important;           /* Tailwind gray-50 */
 }
 
-/* Força a tabela ficar escura no modo dark */
 .dark table,
 .dark thead,
 .dark tbody,
@@ -30,10 +28,9 @@
 .dark .table th {
   background-color: #1f2937 !important;
   color: #f9fafb !important;
-  border-color: #4b5563 !important;  /* Tailwind gray-600 */
+  border-color: #4b5563 !important; /* Tailwind gray-600 */
 }
 
-/* Ajusta também hover nas linhas */
 .dark tr:hover {
   background-color: #374151 !important; /* Tailwind gray-700 */
 }
@@ -58,8 +55,17 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+
+            <!-- Mensagem de sucesso (invisível no início) -->
+            <div 
+              id="successMessage" 
+              class="hidden mb-4 p-4 rounded border border-green-300 bg-green-100 text-green-800"
+            >
+                Usuário criado com sucesso e link de finalização enviado!
+            </div>
+
             <div class="overflow-x-auto">
-                <!-- Tabela -->
+                <!-- Tabela de usuários -->
                 <table class="table min-w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden text-base">
                     <thead class="bg-gray-100 dark:bg-gray-700">
                         <tr class="text-left text-gray-700 dark:text-gray-300">
@@ -98,7 +104,11 @@
                                     >
                                         ✏️ Editar
                                     </button>
-                                    <form action="{{ route('usuarios.delete', $user->id) }}" method="POST" style="display: inline-block;">
+                                    <form 
+                                      action="{{ route('usuarios.delete', $user->id) }}" 
+                                      method="POST"
+                                      style="display: inline-block;"
+                                    >
                                         @csrf
                                         <button
                                             type="submit"
@@ -114,111 +124,169 @@
                     </tbody>
                 </table>
 
-                <!-- Links de Paginação -->
+                <!-- Paginação -->
                 <div class="mt-4">
-                    <!-- Usando o estilo Bootstrap da paginação -->
+                    <!-- Usando estilo Bootstrap -->
                     {{ $usuarios->links('pagination::bootstrap-5') }}
-                    
-                    <!-- Se preferir o estilo nativo do Laravel (Tailwind), comente a linha acima
-                         e use apenas: -->
+
+                    <!-- Se preferir Tailwind padrão do Laravel, use: -->
                     {{-- {{ $usuarios->links() }} --}}
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modal para criar Novo Usuário (sem campos de senha) -->
+    <!-- Modal (inspirado no estilo x-guest-layout) -->
     <div id="modalUsuario" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-1/3">
-            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Novo Usuário</h3>
+        <div 
+          class="w-full sm:max-w-md mt-6 p-6 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg"
+          style="max-height: 90vh; overflow-y: auto;"
+        >
+            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                Novo Usuário
+            </h3>
 
-            <div id="errorMessages" class="mb-4 hidden text-sm text-red-600 dark:text-red-400"></div>
+            <!-- Mensagens de erro (exibidas se houver validação 422) -->
+            <div 
+              id="errorMessages" 
+              class="hidden mb-4 p-4 bg-red-100 text-red-700 rounded border border-red-300 text-sm"
+            ></div>
 
             <form id="formUsuario">
                 @csrf
                 <input type="hidden" id="user_id" name="user_id">
 
-                <!-- Campo Nome -->
+                <!-- Nome -->
                 <div>
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">Nome:</label>
+                    <label 
+                      for="name" 
+                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
+                    >
+                        Nome:
+                    </label>
                     <input
                       id="name"
                       name="name"
                       type="text"
-                      autocomplete="on"
                       required
-                      class="form-control rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      autocomplete="name"
+                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     />
                 </div>
 
-                <!-- Campo CPF -->
-                <div class="mt-3">
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">CPF:</label>
+                <!-- CPF -->
+                <div class="mt-4">
+                    <label 
+                      for="cpf" 
+                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
+                    >
+                        CPF:
+                    </label>
                     <input
                       id="cpf"
                       name="cpf"
                       type="text"
-                      autocomplete="on"
                       required
-                      class="form-control rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      autocomplete="on"
+                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     />
                 </div>
 
-                <!-- Campo Telefone -->
-                <div class="mt-3">
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">Telefone:</label>
+                <!-- Telefone -->
+                <div class="mt-4">
+                    <label 
+                      for="telefone" 
+                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
+                    >
+                        Telefone:
+                    </label>
                     <input
                       id="telefone"
                       name="telefone"
                       type="text"
-                      autocomplete="on"
                       required
-                      class="form-control rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      autocomplete="tel"
+                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     />
                 </div>
 
-                <!-- Campo Email -->
-                <div class="mt-3">
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">Email:</label>
+                <!-- Email -->
+                <div class="mt-4">
+                    <label 
+                      for="email"
+                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
+                    >
+                        Email:
+                    </label>
                     <input
                       id="email"
                       name="email"
                       type="email"
-                      autocomplete="on"
                       required
-                      class="form-control rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      autocomplete="email"
+                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     />
                 </div>
 
-                <!-- Campo Tipo -->
-                <div class="mt-3">
-                    <label class="block mb-1 text-gray-700 dark:text-gray-300">Tipo:</label>
+                <!-- Tipo (Role) -->
+                <div class="mt-4">
+                    <label 
+                      for="role" 
+                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
+                    >
+                        Tipo:
+                    </label>
                     <select
                       id="role"
                       name="role"
                       required
-                      class="form-select rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
                     >
                         <option value="cliente">Cliente</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
 
-                <!-- Botões do Modal -->
-                <div class="mt-4 flex justify-end">
+                <!-- Botões -->
+                <div class="flex items-center justify-end mt-4">
                     <button
                       type="button"
                       id="fecharModal"
-                      class="mr-2 px-4 py-2 bg-gray-400 text-white rounded"
+                      class="px-4 py-2 bg-gray-400 text-white rounded mr-2"
                     >
                         Cancelar
                     </button>
+
+                    <!-- Botão Salvar com spinner -->
                     <button
                       type="button"
                       id="salvarUsuario"
-                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
+                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded relative"
                     >
-                        Salvar
+                        <span id="btnText">Salvar</span>
+                        <span id="btnSpinner" class="hidden ml-2">
+                            <!-- Exemplo de spinner (Tailwind) -->
+                            <svg 
+                              class="animate-spin h-5 w-5 text-white" 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              fill="none" 
+                              viewBox="0 0 24 24"
+                            >
+                              <circle 
+                                class="opacity-25" 
+                                cx="12" 
+                                cy="12" 
+                                r="10" 
+                                stroke="currentColor" 
+                                stroke-width="4"
+                              />
+                              <path 
+                                class="opacity-75" 
+                                fill="currentColor" 
+                                d="M4 12a8 8 0 018-8v8z"
+                              />
+                            </svg>
+                        </span>
                     </button>
                 </div>
             </form>
@@ -229,28 +297,46 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // Alterna a visibilidade da senha e o ícone
-        function togglePassword(inputId, button) {
-            const input = document.getElementById(inputId);
-            const isPassword = input.type === 'password';
-            input.type = isPassword ? 'text' : 'password';
-
-            const icon = button.querySelector('i');
-            if (icon) {
-                icon.classList.toggle('bi-eye');
-                icon.classList.toggle('bi-eye-slash');
-            }
-        }
-
         // Remove pontuação do CPF
         function limparPontuacaoCPF(cpf) {
             return cpf.replace(/\D/g, '');
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            const modalUsuario = document.getElementById('modalUsuario');
+            const btnNovoUsuario = document.getElementById('btnNovoUsuario');
+            const btnFecharModal = document.getElementById('fecharModal');
+            const btnSalvarUsuario = document.getElementById('salvarUsuario');
             const errorMessages = document.getElementById('errorMessages');
+            const successMessage = document.getElementById('successMessage');
+            const btnSpinner = document.getElementById('btnSpinner');
+            const btnText = document.getElementById('btnText');
 
-            document.getElementById('salvarUsuario').addEventListener('click', async function () {
+            // Abrir modal
+            btnNovoUsuario.addEventListener('click', () => {
+                modalUsuario.classList.remove('hidden');
+                modalUsuario.classList.add('flex');
+                errorMessages.classList.add('hidden');
+                errorMessages.innerHTML = '';
+                // limpa campos
+                document.getElementById('formUsuario').reset();
+                successMessage.classList.add('hidden'); // caso já tenha aparecido antes
+            });
+
+            // Fechar modal
+            btnFecharModal.addEventListener('click', () => {
+                modalUsuario.classList.remove('flex');
+                modalUsuario.classList.add('hidden');
+            });
+
+            // Evento Salvar
+            btnSalvarUsuario.addEventListener('click', async function () {
+                // Preparar UI para "salvando..."
+                btnSalvarUsuario.disabled = true;
+                btnSpinner.classList.remove('hidden');
+                btnText.textContent = 'Salvando...';
+
+                // Pegar dados do form
                 const data = {
                     name: document.getElementById('name').value,
                     cpf: limparPontuacaoCPF(document.getElementById('cpf').value),
@@ -260,10 +346,17 @@
                 };
 
                 try {
+                    // Enviar requisição
                     await axios.post("{{ route('usuarios.storeBasic') }}", data);
-                    alert('Usuário criado! Ele receberá um e-mail para finalizar o cadastro.');
-                    location.reload();
+                    
+                    // Se chegou aqui, deu certo:
+                    // Fecha o modal, limpa form e mostra msg de sucesso
+                    modalUsuario.classList.remove('flex');
+                    modalUsuario.classList.add('hidden');
+                    successMessage.classList.remove('hidden');
+
                 } catch (error) {
+                    // Se houve erro de validação (422)
                     if (error.response && error.response.status === 422) {
                         const errors = error.response.data.errors;
                         let messages = '';
@@ -273,9 +366,16 @@
                         errorMessages.innerHTML = messages;
                         errorMessages.classList.remove('hidden');
                     } else {
-                        alert('Erro inesperado. Veja o console.');
+                        // Erro inesperado
                         console.error(error);
+                        errorMessages.innerHTML = 'Ocorreu um erro inesperado.';
+                        errorMessages.classList.remove('hidden');
                     }
+                } finally {
+                    // Restaurar estado do botão
+                    btnSalvarUsuario.disabled = false;
+                    btnSpinner.classList.add('hidden');
+                    btnText.textContent = 'Salvar';
                 }
             });
         });
