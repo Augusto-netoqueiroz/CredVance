@@ -149,6 +149,10 @@ Route::post('/forgot-password', [LandingRegisterController::class, 'sendResetPas
     ->middleware('guest')
     ->name('password.email'); // Mantém o mesmo nome se o template usar essa rota
 
+
+    Route::post('/forgot-password-auth', [LandingRegisterController::class, 'sendResetPasswordLinkCustomSameView'])
+    ->name('password.email.auth'); // Mantém o mesmo nome se o template usar essa rota
+
 // Rota para o link de reset (usado no e-mail)
 Route::get('/reset-password', [LandingRegisterController::class, 'showResetPasswordFormCustom'])
     ->middleware('guest')

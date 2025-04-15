@@ -126,6 +126,40 @@ class LandingRegisterController extends Controller
     }
 
 
+
+
+    public function sendResetPasswordLinkCustomSameView(Request $request)
+{
+    // Valida o e-mail informado
+    $request->validate([
+        'email' => 'required|email',
+    ]);
+
+    // Busca o usuário pelo e-mail
+    $user = User::where('email', $request->email)->first();
+
+    if (!$user) {
+        // Retorna para a mesma view com mensagem de erro (validation errors)
+        return back()->withErrors(['email' => 'Usuário não encontrado.']);
+    }
+
+    // Gera link de reset assinado (válido por 15 minutos, por exemplo)
+    $resetLink = URL::temporarySignedRoute(
+        'landing.reset',  // Nome da rota que processará o reset
+        now()->addMinutes(15),
+        ['user' => $user->id]  // Parâmetro user na URL
+    );
+
+    // Envia o e-mail com esse link usando seu Mailable customizado
+    Mail::to($user->email)->send(new \App\Mail\PasswordResetMail($resetLink));
+
+    // Retorna para a mesma view com mensagem de sucesso
+    // 'status' ou 'success' como quiser
+    return back()->with('status', 'Link de Redefinição enviado! Verifique seu e-mail.');
+}
+
+
+
     public function showResetPasswordFormCustom(Request $request)
 {
     // Verifica se existe usuário autenticado e desloga-o
