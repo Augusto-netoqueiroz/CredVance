@@ -10,43 +10,47 @@
 
             <!-- Cards com Indicadores Modernos -->
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <!-- Planos de Consórcio -->
                 <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
                     <div class="p-2 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 rounded-full">
-                        <i data-lucide="users" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Consorciados Ativos</div>
-                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">--</div>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
-                    <div class="p-2 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-full">
-                        <i data-lucide="layers" class="w-6 h-6"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-500 dark:text-gray-400">Grupos Ativos</div>
-                        <div class="text-2xl font-bold text-green-600 dark:text-green-400">--</div>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
-                    <div class="p-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full">
-                        <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        <i data-lucide="copy" class="w-6 h-6"></i>
                     </div>
                     <div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Cotas Vendidas</div>
-                        <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">--</div>
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400">{{ $cotasVendidas }}</div>
                     </div>
                 </div>
 
+                <!-- Contratos Ativos -->
                 <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
-                    <div class="p-2 bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300 rounded-full">
+                    <div class="p-2 bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 rounded-full">
+                        <i data-lucide="file-text" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Contratos Ativos</div>
+                        <div class="text-2xl font-bold text-green-600 dark:text-green-400">{{ $contratosCount }}</div>
+                    </div>
+                </div>
+
+                <!-- Faturamento (Mês) -->
+                <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
+                    <div class="p-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full">
                         <i data-lucide="dollar-sign" class="w-6 h-6"></i>
                     </div>
                     <div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">Faturamento (Mês)</div>
-                        <div class="text-2xl font-bold text-purple-600 dark:text-purple-400">--</div>
+                        <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">R$ {{ number_format($faturamentoMes,2,',','.') }}</div>
+                    </div>
+                </div>
+
+                <!-- Pagamentos Pendentes -->
+                <div class="flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
+                    <div class="p-2 bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300 rounded-full">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Pagamentos Pendentes</div>
+                        <div class="text-2xl font-bold text-red-600 dark:text-red-400">{{ $pendentesCount }} | R$ {{ number_format($pendentesValor,2,',','.') }}</div>
                     </div>
                 </div>
             </div>
@@ -94,7 +98,7 @@
                 <a href="#" class="flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Novo Grupo</a>
                 <a href="#" class="flex items-center justify-center bg-gradient-to-r from-green-500 to-green-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Registrar Pagamento</a>
                 <a href="#" class="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Gerenciar Usuários</a>
-                <a href="#" class="flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Inserir Resultado</a>
+                <a href="{{ route('contratos.create') }}" class="flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Criar Contrato</a>
             </div>
 
             <!-- Últimos Consorciados -->

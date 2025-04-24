@@ -14,6 +14,11 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\CobrancasController;
+use App\Http\Controllers\ContratoController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ClienteController;
+
 
 
 
@@ -24,7 +29,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 
 //View inicial
 Route::get('/', function () {
-    return view('construcao');
+    return view('pagina');
 });
 
 //Template prinicial - rota por enquanto
@@ -66,8 +71,12 @@ Route::post('/login', [UsuarioController::class, 'authenticate'])->name('login.a
 //------------------Fim das rotas não protegidas-----------------// 
  
 Route::middleware('auth')->group(function () {
-    Route::get('/Inicio', [UsuarioController::class, 'ShowInicio'])->name('Inicio');
+    Route::get('/Inicio', [ClienteController::class, 'index'])->name('Inicio');
 });
+
+Route::get('/cliente/data', [ClienteController::class, 'data'])
+     ->name('cliente.data')
+     ->middleware(['auth','verified']);
 
 
 
@@ -80,16 +89,9 @@ Route::patch('/usuario/{id}', [UsuarioController::class, 'update'])->name('usuar
 });
 
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        // Verifica se o usuário logado tem role de admin
-        if (!auth()->user() || auth()->user()->role !== 'admin') {
-            abort(403, 'Acesso negado.');
-        }
-
-        return view('dashboard');
-    })->name('dashboard');
-});
+Route::get('/dashboard', [DashboardController::class, 'index'])
+     ->middleware(['auth', 'verified'])
+     ->name('dashboard');
 
 
 
@@ -239,4 +241,24 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+});
+
+
+Route::middleware('auth')->group(function () {
+    Route::get('/cliente',      [CobrancasController::class, 'index'])->name('cliente.index');
+    Route::get('/cliente/data', [CobrancasController::class, 'data'])->name('cliente.data');
+});
+
+
+
+Route::get('/cliente/test-data', [CobrancasController::class, 'testData']);
+
+
+//---------------------------------------
+
+
+Route::middleware(['auth'])->group(function () {
+    // somente create e store para contratos
+    Route::resource('contratos', ContratoController::class)
+         ->only(['create','store']);
 });
