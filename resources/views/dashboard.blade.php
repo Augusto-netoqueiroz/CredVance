@@ -144,7 +144,7 @@
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
                 <a href="#" class="flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Novo Grupo</a>
                 <a href="#" class="flex items-center justify-center bg-gradient-to-r from-green-500 to-green-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Registrar Pagamento</a>
-                <a href="#" class="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Gerenciar Usuários</a>
+                <a href="{{ route('usuarios.index') }}" class="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Gerenciar Usuários</a>
                 <a href="{{ route('contratos.create') }}" class="flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Criar Contrato</a>
             </div>
 
