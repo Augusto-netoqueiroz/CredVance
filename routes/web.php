@@ -94,7 +94,12 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
      ->name('dashboard');
 
 
-
+     Route::middleware(['auth'])->prefix('dashboard')->group(function () {
+        Route::get('/detalhes/cotas', [DashboardController::class, 'detalhesCotas'])->name('dashboard.detalhes.cotas');
+        Route::get('/detalhes/contratos', [DashboardController::class, 'detalhesContratos'])->name('dashboard.detalhes.contratos');
+        Route::get('/detalhes/faturamento', [DashboardController::class, 'detalhesFaturamento'])->name('dashboard.detalhes.faturamento');
+        Route::get('/detalhes/pendentes', [DashboardController::class, 'detalhesPendentes'])->name('dashboard.detalhes.pendentes');
+    });
 
 Route::get('/finalizar-cadastro', [LandingRegisterController::class, 'finishRegister'])
      ->middleware('signed')

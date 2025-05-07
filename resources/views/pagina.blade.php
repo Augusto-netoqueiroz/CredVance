@@ -71,9 +71,12 @@
         </p>
         <div class="d-flex mt-4" data-aos="fade-up" data-aos-delay="300">
           <a href="#about" class="btn-get-started">Começar Agora</a>
-          <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox btn-watch-video d-flex align-items-center">
+
+          <!-- Video de apresentação - desativado por enquanto
+            <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox btn-watch-video d-flex align-items-center">
             <i class="bi bi-play-circle"></i><span>Assista ao Vídeo</span>
-          </a>
+          </a>  -->
+
         </div>
       </div>
     </section>
