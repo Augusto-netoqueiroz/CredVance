@@ -60,6 +60,12 @@ return [
             'report' => false,
         ],
 
+        'boletos' => [
+            'driver' => 'local',
+            'root'   => storage_path('app/boletos'),
+            'visibility' => 'private',
+],
+
     ],
 
     /*

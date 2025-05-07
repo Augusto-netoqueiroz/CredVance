@@ -18,6 +18,7 @@ use App\Http\Controllers\CobrancasController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\BoletoController;
 
 
 
@@ -70,6 +71,13 @@ Route::post('/login', [UsuarioController::class, 'authenticate'])->name('login.a
 
 //------------------Fim das rotas não protegidas-----------------// 
  
+
+
+
+
+
+
+
 Route::middleware('auth')->group(function () {
     Route::get('/Inicio', [ClienteController::class, 'index'])->name('Inicio');
 });
@@ -249,14 +257,7 @@ Route::middleware('auth')->group(function () {
 });
 
 
-Route::middleware('auth')->group(function () {
-    Route::get('/cliente',      [CobrancasController::class, 'index'])->name('cliente.index');
-    Route::get('/cliente/data', [CobrancasController::class, 'data'])->name('cliente.data');
-});
 
-
-
-Route::get('/cliente/test-data', [CobrancasController::class, 'testData']);
 
 
 //---------------------------------------
@@ -267,3 +268,29 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('contratos', ContratoController::class)
          ->only(['create','store']);
 });
+
+
+
+// Form de upload de boleto
+Route::get('boleto/upload/{pagamento}', [BoletoController::class, 'showUploadForm'])
+    ->name('boleto.upload.form')
+    ->middleware('auth');
+
+// Processar upload
+Route::post('boleto/upload/{pagamento}', [BoletoController::class, 'upload'])
+    ->name('boleto.upload')
+    ->middleware('auth');
+
+// Download do boleto
+Route::get('boleto/download/{pagamento}', [BoletoController::class, 'download'])
+    ->name('boleto.download')
+    ->middleware('auth');
+
+
+    Route::middleware(['auth'])->group(function () {
+        // Página de gerenciamento
+        Route::get('boleto/gerenciar', [BoletoController::class, 'manageForm'])
+            ->name('boleto.manage.form');
+        Route::post('boleto/gerenciar', [BoletoController::class, 'manageUpload'])
+            ->name('boleto.manage.upload');
+    });

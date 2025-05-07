@@ -64,7 +64,7 @@
                     <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                         <thead class="bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
                             <tr>
-                                <th class="px-4 py-3">Mês</th>
+                                <th class="px-4 py-3">Vencimento</th>
                                 <th class="px-4 py-3">Valor</th>
                                 <th class="px-4 py-3">Status</th>
                                 <th class="px-4 py-3">Ação</th>
@@ -72,7 +72,9 @@
                         </thead>
                         <tbody id="pagamentos_table" class="divide-y divide-gray-200 dark:divide-gray-700">
                             <tr>
-                                <td colspan="4" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Carregando...</td>
+                                <td colspan="4" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                                    Carregando...
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -99,42 +101,66 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.lucide) lucide.createIcons();
+    document.addEventListener('DOMContentLoaded', () => {
+        if (window.lucide) lucide.createIcons();
 
-            fetch("{{ route('cliente.data') }}")
-                .then(res => {
-                    if (!res.ok) throw new Error(`Status ${res.status}`);
-                    return res.json();
-                })
-                .then(data => {
-                    document.getElementById('parcela_aberto').textContent   = data.parcela_aberto;
-                    document.getElementById('parcela_paga').textContent     = data.parcela_paga;
-                    document.getElementById('status_consorcio').textContent = data.status_consorcio || '–';
+        fetch("{{ route('cliente.data') }}")
+            .then(res => {
+                if (!res.ok) throw new Error(`Status ${res.status}`);
+                return res.json();
+            })
+            .then(data => {
+                // Preenche indicadores
+                document.getElementById('parcela_aberto').textContent   = data.parcela_aberto;
+                document.getElementById('parcela_paga').textContent     = data.parcela_paga;
+                document.getElementById('status_consorcio').textContent = data.status_consorcio || '–';
 
-                    if (data.proxima_parcela) {
-                        document.getElementById('proxima_parcela').textContent =
-                            `${data.proxima_parcela.vencimento} – R$ ${data.proxima_parcela.valor}`;
-                    }
+                if (data.proxima_parcela) {
+                    document.getElementById('proxima_parcela').textContent =
+                        `${data.proxima_parcela.vencimento} – R$ ${data.proxima_parcela.valor}`;
+                }
 
-                    const tbody = document.getElementById('pagamentos_table');
-                    tbody.innerHTML = '';
-                    if (!data.pagamentos.length) {
-                        tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Nenhuma fatura localizada.</td></tr>';
-                    } else {
-                        data.pagamentos.forEach(f => {
-                            const tr = document.createElement('tr');
-                            tr.className = 'bg-white dark:bg-gray-800';
-                            tr.innerHTML =
-                              `<td class="px-4 py-3">${f.vencimento}</td>` +
-                              `<td class="px-4 py-3">R$ ${f.valor}</td>` +
-                              `<td class="px-4 py-3"><span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${f.status==='pago' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'}">${f.status.charAt(0).toUpperCase()+f.status.slice(1)}</span></td>` +
-                              `<td class="px-4 py-3"><a href="/cobrancas/${f.id}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200">Ver</a></td>`;
-                            tbody.appendChild(tr);
-                        });
-                    }
-                })
-                .catch(err => console.error('Fetch error:', err));
-        });
+                // Preenche tabela de pagamentos
+                const tbody = document.getElementById('pagamentos_table');
+                tbody.innerHTML = '';
+
+                if (!data.pagamentos.length) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="4" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                                Nenhuma fatura localizada.
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                data.pagamentos.forEach(f => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'bg-white dark:bg-gray-800';
+
+                    // Monta o botão Ver apenas se boleto_url estiver preenchido
+                    const acao = f.boleto_url
+                        ? `<a href="${f.boleto_url}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200">Ver</a>`
+                        : '';
+
+                    tr.innerHTML =
+                        `<td class="px-4 py-3">${f.vencimento}</td>` +
+                        `<td class="px-4 py-3">R$ ${f.valor}</td>` +
+                        `<td class="px-4 py-3">
+                            <span class="inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                f.status === 'pago'
+                                    ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+                                    : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+                            }">
+                                ${f.status.charAt(0).toUpperCase() + f.status.slice(1)}
+                            </span>
+                        </td>` +
+                        `<td class="px-4 py-3">${acao}</td>`;
+
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => console.error('Fetch error:', err));
+    });
     </script>
 </x-app-layout>

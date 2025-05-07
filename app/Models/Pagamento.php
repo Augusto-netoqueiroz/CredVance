@@ -10,6 +10,7 @@ class Pagamento extends Model
         'contrato_id',
         'vencimento',
         'valor',
+        'boleto',
         'status',
     ];
 
