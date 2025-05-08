@@ -7,8 +7,49 @@
         </h2>
     </x-slot>
 
+    @if(session('success'))
+    <div 
+        x-data="{ open: true }"
+        x-show="open"
+        x-transition
+        class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 text-center">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                {{ session('success') }}
+            </h2>
+            <button @click="open = false"
+                class="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition">
+                OK
+            </button>
+        </div>
+    </div>
+@endif
+
+
     <div class="py-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div class="max-w-7xl mx-auto">
+
+            {{-- ====== BOTÃO PARA ABRIR O MODAL ====== --}}
+            <div class="mb-6 flex justify-end">
+                <button
+                    id="btnOpenModal"
+                    class="inline-flex items-center gap-2 px-4 py-2
+                        text-sm font-semibold 
+                        border border-indigo-600 dark:border-indigo-400
+                        text-indigo-700 dark:text-indigo-200
+                        bg-white dark:bg-gray-800
+                        hover:bg-indigo-100 dark:hover:bg-indigo-600
+                        hover:text-indigo-900 dark:hover:text-white
+                        rounded-lg shadow-sm transition duration-150
+                        focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                >
+                    <x-lucide-plus class="w-5 h-5" />
+                    Contratar Novas Cotas
+                </button>
+            </div>
+
+
 
             {{-- ========== INDICADORES ========= --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
@@ -100,9 +141,44 @@
         </div>
     </div>
 
+    {{-- ====== MODAL ====== --}}
+    <div
+        id="newAccountModal"
+        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 relative">
+            <button
+                id="btnCloseModal"
+                class="absolute top-3 right-3 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
+            >
+                <x-lucide-x class="w-5 h-5" />
+            </button>
+
+            <h3 class="text-lg font-semibold text-gray-700 dark:text-white mb-4">
+                Contratar Novas Contas
+            </h3>
+
+            <p class="mb-4 text-gray-600 dark:text-gray-300">
+                Clique abaixo para abrir o formulário de contratação:
+            </p>
+            <a
+                href="{{ route('contratos.create') }}"
+                class="inline-block px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition"
+            >
+                Ir para Contratação
+            </a>
+        </div>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
+
+        const modal = document.getElementById('newAccountModal');
+        document.getElementById('btnOpenModal')
+                .addEventListener('click', () => modal.classList.remove('hidden'));
+        document.getElementById('btnCloseModal')
+                .addEventListener('click', () => modal.classList.add('hidden'));
 
         fetch("{{ route('cliente.data') }}")
             .then(res => {
@@ -138,7 +214,6 @@
                     const tr = document.createElement('tr');
                     tr.className = 'bg-white dark:bg-gray-800';
 
-                    // Monta o botão Ver apenas se boleto_url estiver preenchido
                     const acao = f.boleto_url
                         ? `<a href="${f.boleto_url}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200">Ver</a>`
                         : '';

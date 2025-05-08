@@ -97,4 +97,34 @@ class CobrancasController extends Controller
         Log::info('buildResponse complete', ['response_keys' => array_keys($response)]);
         return response()->json($response);
     }
+
+
+    public function gerarPagamentos(Contrato $contrato): void
+    {
+        $consorcio = $contrato->consorcio;
+        $clienteId = $contrato->cliente_id;
+        $qtdCotas = $contrato->quantidade_cotas;
+        $valorCota = $consorcio->valor_cota; // certifique-se de ter esse campo na tabela consorcios
+        $prazo = $consorcio->prazo;
+    
+        $inicio = Carbon::now()->startOfMonth();
+    
+        $pagamentos = [];
+    
+        for ($i = 0; $i < $prazo; $i++) {
+            $vencimento = $inicio->copy()->addMonths($i);
+            $pagamentos[] = [
+                'contrato_id' => $contrato->id,
+                'vencimento'  => $vencimento,
+                'valor'       => $valorCota * $qtdCotas,
+                'status'      => 'pendente',
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ];
+        }
+    
+        \App\Models\Pagamento::insert($pagamentos);
+    }
+    
+
 }
