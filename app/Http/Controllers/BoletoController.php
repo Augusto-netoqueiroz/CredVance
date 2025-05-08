@@ -76,16 +76,32 @@ class BoletoController extends Controller
         );
     }
 
-    public function manageForm()
+    public function manageForm(Request $request)
     {
         $this->checkAdmin();
-
+    
+        $perPage    = $request->input('per_page', 25);
+        $clienteId  = $request->input('cliente');
+        $status     = $request->input('status');
+        $dataIni    = $request->input('data_ini');
+        $dataFim    = $request->input('data_fim');
+    
         $pagamentos = Pagamento::with('contrato.cliente')
+            ->when($clienteId, function ($query, $clienteId) {
+                $query->whereHas('contrato', function ($q) use ($clienteId) {
+                    $q->where('cliente_id', $clienteId);
+                });
+            })
+            ->when($status, fn($q) => $q->where('status', $status))
+            ->when($dataIni, fn($q) => $q->whereDate('vencimento', '>=', $dataIni))
+            ->when($dataFim, fn($q) => $q->whereDate('vencimento', '<=', $dataFim))
             ->orderBy('vencimento')
-            ->get();
-
+            ->paginate($perPage)
+            ->appends($request->query());
+    
         return view('boletos.manage', compact('pagamentos'));
     }
+    
 
     public function manageUpload(Request $request)
     {

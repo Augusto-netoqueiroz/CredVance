@@ -14,8 +14,56 @@
             @endif
 
             <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Lista de Pagamentos</h3>
+
+            <form method="GET" class="mb-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 w-full">
+                    <div>
+                        <label for="cliente" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Cliente</label>
+                        <select name="cliente" id="cliente" class="select2 border rounded px-2 py-1 w-full">
+                            <option value="">Todos os clientes</option>
+                            @foreach(App\Models\User::where('role', 'cliente')->orderBy('name')->get() as $cliente)
+                                <option value="{{ $cliente->id }}" {{ request('cliente') == $cliente->id ? 'selected' : '' }}>
+                                    {{ $cliente->id }} - {{ $cliente->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="data_ini" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data Início</label>
+                        <input type="date" name="data_ini" id="data_ini" value="{{ request('data_ini') }}" class="border rounded px-2 py-1 w-full">
+                    </div>
+
+                    <div>
+                        <label for="data_fim" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Data Fim</label>
+                        <input type="date" name="data_fim" id="data_fim" value="{{ request('data_fim') }}" class="border rounded px-2 py-1 w-full">
+                    </div>
+
+                    <div>
+                        <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                        <select name="status" id="status" class="border rounded px-2 py-1 w-full">
+                            <option value="">Todos</option>
+                            <option value="pago" {{ request('status') === 'pago' ? 'selected' : '' }}>Pago</option>
+                            <option value="pendente" {{ request('status') === 'pendente' ? 'selected' : '' }}>Pendente</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-end gap-2">
+                    <div>
+                        <label for="per_page" class="text-sm font-medium text-gray-700 dark:text-gray-300">Exibir</label>
+                        <select name="per_page" id="per_page" class="border rounded px-2 py-1 ml-2">
+                            @foreach([10, 25, 50, 100] as $qtd)
+                                <option value="{{ $qtd }}" {{ request('per_page', 25) == $qtd ? 'selected' : '' }}>{{ $qtd }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-sm">Atualizar</button>
+                </div>
+            </form>
+
             <div class="overflow-x-auto">
-                <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
+                <table id="pagamentosTable" class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                     <thead class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-200">
                         <tr>
                             <th class="px-4 py-2">#</th>
@@ -42,95 +90,90 @@
                                     <span class="px-2 py-1 bg-gray-200 text-gray-800 rounded-full text-xs">{{ ucfirst($pag->status) }}</span>
                                 @endif
                             </td>
-                            <td class="px-4 py-2 align-middle space-x-2">
-                                <button type="button" onclick="openUploadModal({{ $pag->id }})" class="text-blue-600 hover:text-blue-800 text-sm">Adicionar Cobrança</button>
-                                @if($pag->boleto)
-                                    <a href="{{ route('boleto.download', $pag) }}" class="text-green-600 hover:text-green-800 text-sm">Baixar boleto</a>
-                                @endif
-                                @if($pag->comprovante && Storage::disk('local')->exists($pag->comprovante))
-                                    <a href="{{ route('boleto.comprovante.download', $pag->id) }}" class="text-purple-600 hover:text-purple-800 text-sm"> Baixar Comprovante</a>
-                                @endif
-                                <button type="button" onclick="openStatusModal({{ $pag->id }})" class="text-indigo-600 hover:text-indigo-800 text-sm">Marcar como Pago</button>
-                            </td>
+                            <td class="px-4 py-2 align-middle flex flex-wrap gap-2 justify-start items-center">
+                        <button type="button" onclick="openUploadModal({{ $pag->id }})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs w-32" title="Atualizar Pagamento">
+                            <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                        </button>
+
+                        @if($pag->boleto)
+                            <a href="{{ route('boleto.download', $pag) }}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2  rounded text-xs w-32 flex items-center justify-center" title="Baixar Boleto">
+                                <i data-lucide="file-text" class="w-4 h-4"></i>
+                            </a>
+                        @endif
+
+                        @if($pag->comprovante && Storage::disk('local')->exists($pag->comprovante))
+                            <a href="{{ route('boleto.comprovante.download', $pag->id) }}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2  rounded text-xs w-32 flex items-center justify-center" title="Baixar Comprovante">
+                                <i data-lucide="image" class="w-4 h-4"></i>
+                            </a>
+                        @endif
+
+                        <button type="button" onclick="openStatusModal({{ $pag->id }})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2  rounded text-xs w-32" title="Marcar como Pago">
+                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+
                         </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
 
-    <!-- Modal de Upload -->
-    <div id="uploadModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 items-center justify-center" onclick="closeUploadModal()">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Enviar Boleto</h3>
-                <button onclick="closeUploadModal()" class="text-red-500 hover:underline">Fechar</button>
+            <div class="mt-4">
+                {{ $pagamentos->links() }}
             </div>
-            <form id="uploadForm" action="{{ route('boleto.manage.upload') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="pagamento_id" id="modalPagamentoId">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Arquivo (PDF)</label>
-                    <input type="file" name="boleto" accept="application/pdf" required class="mt-1 block w-full text-gray-900 dark:text-gray-100" />
-                    @error('boleto')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition">Enviar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modal de Marcar como Pago -->
-    <div id="statusModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-30 items-center justify-center" onclick="closeStatusModal()">
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg w-full max-w-md" onclick="event.stopPropagation()">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Marcar como Pago</h3>
-                <button onclick="closeStatusModal()" class="text-red-500 hover:underline">Fechar</button>
-            </div>
-            <form action="{{ route('boleto.marcar.pago') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <input type="hidden" name="pagamento_id" id="statusPagamentoId">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
-                    <textarea name="descricao" rows="2" class="mt-1 block w-full text-gray-900 dark:text-gray-100"></textarea>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Comprovante (opcional)</label>
-                    <input type="file" name="comprovante" accept=".jpg,.jpeg,.png,.pdf" class="mt-1 block w-full text-gray-900 dark:text-gray-100" />
-                </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition">Confirmar</button>
-                </div>
-            </form>
         </div>
     </div>
 
     <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.jQuery && $.fn.select2) {
+                $('#cliente').select2({
+                    placeholder: "Selecione um cliente",
+                    allowClear: true,
+                    width: '100%'
+                });
+            }
+        });
+
         function openUploadModal(id) {
             document.getElementById('modalPagamentoId').value = id;
             const modal = document.getElementById('uploadModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
+
         function closeUploadModal() {
             const modal = document.getElementById('uploadModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }
+
         function openStatusModal(id) {
             document.getElementById('statusPagamentoId').value = id;
             const modal = document.getElementById('statusModal');
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
+
         function closeStatusModal() {
             const modal = document.getElementById('statusModal');
             modal.classList.remove('flex');
             modal.classList.add('hidden');
         }
     </script>
+
+
+<style>
+ [title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+</style>
 </x-app-layout>

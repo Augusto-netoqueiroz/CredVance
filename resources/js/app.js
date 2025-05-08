@@ -1,10 +1,12 @@
 import './bootstrap';
 import Alpine from 'alpinejs';
+import { createIcons, icons } from 'lucide';
 
 window.Alpine = Alpine;
 Alpine.start();
 
 document.addEventListener('DOMContentLoaded', () => {
+    // ----- TEMA ESCURO / CLARO -----
     const themeToggleBtn = document.getElementById('theme-toggle');
     const darkIcon = document.getElementById('theme-toggle-dark-icon');
     const lightIcon = document.getElementById('theme-toggle-light-icon');
@@ -14,47 +16,44 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
-            darkIcon.classList.remove('hidden');
-            lightIcon.classList.add('hidden');
+            darkIcon?.classList.remove('hidden');
+            lightIcon?.classList.add('hidden');
         } else {
             document.documentElement.classList.remove('dark');
-            darkIcon.classList.add('hidden');
-            lightIcon.classList.remove('hidden');
+            darkIcon?.classList.add('hidden');
+            lightIcon?.classList.remove('hidden');
         }
     };
 
     loadTheme();
 
-    themeToggleBtn.addEventListener('click', () => {
+    themeToggleBtn?.addEventListener('click', () => {
         document.documentElement.classList.toggle('dark');
 
         const isDark = document.documentElement.classList.contains('dark');
 
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
 
-        darkIcon.classList.toggle('hidden', !isDark);
-        lightIcon.classList.toggle('hidden', isDark);
+        darkIcon?.classList.toggle('hidden', !isDark);
+        lightIcon?.classList.toggle('hidden', isDark);
     });
-});
 
-
-
-document.addEventListener('DOMContentLoaded', () => {
+    // ----- MODAL DE USUÁRIO -----
     const modalUsuario = document.getElementById('modalUsuario');
     const btnNovoUsuario = document.getElementById('btnNovoUsuario');
     const fecharModal = document.getElementById('fecharModal');
 
-    btnNovoUsuario.addEventListener('click', () => {
-        modalUsuario.classList.remove('hidden');
-        modalUsuario.classList.add('flex');
+    btnNovoUsuario?.addEventListener('click', () => {
+        modalUsuario?.classList.remove('hidden');
+        modalUsuario?.classList.add('flex');
     });
 
-    fecharModal.addEventListener('click', () => {
-        modalUsuario.classList.add('hidden');
-        modalUsuario.classList.remove('flex');
+    fecharModal?.addEventListener('click', () => {
+        modalUsuario?.classList.add('hidden');
+        modalUsuario?.classList.remove('flex');
     });
 
-    document.getElementById('formUsuario').addEventListener('submit', (e) => {
+    document.getElementById('formUsuario')?.addEventListener('submit', (e) => {
         e.preventDefault();
 
         axios.post('/usuarios', {
@@ -70,4 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Erro ao salvar usuário.');
         });
     });
+
+    // ----- LUCIDE ICONS -----
+    createIcons({ icons });
 });
