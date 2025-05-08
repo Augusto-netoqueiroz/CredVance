@@ -62,7 +62,8 @@
 
   {{-- Modal de Confirmação --}}
   <div id="modalContrato" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-3xl mx-4 sm:mx-6 md:mx-auto p-6 relative max-h-[90vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-3xl mx-4 sm:mx-4 md:mx-auto p-6 relative max-h-[90vh] overflow-y-auto">
+      
       <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirmação do Contrato</h3>
       <div id="conteudoContrato" class="text-sm text-gray-700 dark:text-gray-200 space-y-4"></div>
 
@@ -83,7 +84,7 @@
         </button>
       </div>
 
-      <button onclick="fecharModalContrato()" class="absolute top-2 right-3 text-gray-500 dark:text-gray-300 hover:text-red-600 text-lg font-bold">
+      <button onclick="fecharModalContrato()" class="absolute top-4 right-6 text-gray-500 dark:text-gray-300 hover:text-red-600 text-2xl font-bold z-50">
         ×
       </button>
     </div>
@@ -119,7 +120,17 @@
       }
 
       const plano = document.querySelector('#consorcio_id option:checked')?.textContent || '';
-      const qtdCotas = document.querySelector('#quantidade_cotas').value;
+      const qtdCotas = parseInt(document.querySelector('#quantidade_cotas').value);
+
+      const valorParcelaInicial = 155.00;
+      const valorParcelaFinal = 100.00;
+      const parcelasPorCota = 12;
+      const totalPorCota = 1530.00;
+      const retornoPorCota = 1860.00;
+
+      const valorTotal = totalPorCota * qtdCotas;
+      const retornoTotal = retornoPorCota * qtdCotas;
+      const vencimentoPrimeiraParcela = '10/06/2025';
 
       const contrato = `
         <p><strong>CONTRATO DE PARTICIPAÇÃO EM GRUPO DE CONSÓRCIO</strong></p>
@@ -133,6 +144,17 @@
         <p><strong>Plano escolhido:</strong> ${plano}<br>
         <strong>Quantidade de cotas:</strong> ${qtdCotas}</p>
 
+         <p><strong>Detalhamento Financeiro:</strong></p>
+        <p>Quantidade de cotas contratadas: <strong>${qtdCotas}</strong><br>
+        Parcelas por cota: <strong>${parcelasPorCota}</strong><br>
+        Valor da 1ª parcela total: <strong>R$ ${(valorParcelaInicial * qtdCotas).toFixed(2)}</strong><br>
+        Valor da última parcela total: <strong>R$ ${(valorParcelaFinal * qtdCotas).toFixed(2)}</strong><br>
+        Vencimento da 1ª parcela: <strong>${vencimentoPrimeiraParcela}</strong><br>
+        Valor total do contrato: <strong>R$ ${valorTotal.toFixed(2)}</strong><br>
+        Retorno garantido total: <strong>R$ ${retornoTotal.toFixed(2)}</strong></p>
+
+
+
         <p>O cliente se compromete a:</p>
         <ul class="list-disc pl-6">
           <li>Efetuar os pagamentos das parcelas conforme estipulado no plano;</li>
@@ -141,6 +163,8 @@
           <li>Reconhecer que a contemplação depende da regularidade dos pagamentos e da posição no grupo;</li>
           <li>Estar ciente de que inadimplência pode acarretar em exclusão, multas ou perda de direitos.</li>
         </ul>
+
+     
 
         <p>Este contrato é celebrado digitalmente e tem validade legal a partir da aceitação eletrônica abaixo.</p>
         <p class="mt-4 font-semibold">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
