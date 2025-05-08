@@ -7,12 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use App\Services\ActivityLoggerService;
 
 class BoletoController extends Controller
 {
-    /**
-     * Verifica se o usuário é admin.
-     */
     private function checkAdmin()
     {
         if (auth()->user()->role !== 'admin') {
@@ -20,18 +18,12 @@ class BoletoController extends Controller
         }
     }
 
-    /**
-     * Exibe formulário de upload para um pagamento.
-     */
     public function showUploadForm(Pagamento $pagamento)
     {
         $this->checkAdmin();
         return view('boletos.upload', compact('pagamento'));
     }
 
-    /**
-     * Processa o upload único de boleto.
-     */
     public function upload(Request $request, Pagamento $pagamento)
     {
         $this->checkAdmin();
@@ -44,14 +36,12 @@ class BoletoController extends Controller
         $slugCliente = $cliente ? Str::slug($cliente, '-') : 'cliente';
         $filename    = "{$pagamento->id}_{$slugCliente}.pdf";
 
-        // Garante que a pasta exista
         $dir = (string) $pagamento->id;
         $fullPath = storage_path("app/boletos/{$dir}");
         if (! File::exists($fullPath)) {
             File::makeDirectory($fullPath, 0755, true);
         }
 
-        // Salva em pasta com o ID do pagamento
         $path = Storage::disk('boletos')->putFileAs(
             $dir,
             $request->file('boleto'),
@@ -65,14 +55,11 @@ class BoletoController extends Controller
         $pagamento->boleto = $path;
         $pagamento->save();
 
-        return redirect()
-            ->route('dashboard')
-            ->with('success', 'Boleto enviado com sucesso.');
+        ActivityLoggerService::registrar('Boletos', "Enviou boleto para pagamento ID {$pagamento->id} (upload individual).");
+
+        return redirect()->route('dashboard')->with('success', 'Boleto enviado com sucesso.');
     }
 
-    /**
-     * Faz download do boleto associado a um pagamento.
-     */
     public function download(Pagamento $pagamento)
     {
         $this->checkAdmin();
@@ -81,16 +68,14 @@ class BoletoController extends Controller
             abort(404, 'Arquivo não encontrado.');
         }
 
-        return Storage::disk('boletos')
-            ->download(
-                $pagamento->boleto,
-                "boleto_{$pagamento->id}.pdf"
-            );
+        ActivityLoggerService::registrar('Boletos', "Baixou boleto do pagamento ID {$pagamento->id}.");
+
+        return Storage::disk('boletos')->download(
+            $pagamento->boleto,
+            "boleto_{$pagamento->id}.pdf"
+        );
     }
 
-    /**
-     * Página de gerenciamento de boletos.
-     */
     public function manageForm()
     {
         $this->checkAdmin();
@@ -102,9 +87,6 @@ class BoletoController extends Controller
         return view('boletos.manage', compact('pagamentos'));
     }
 
-    /**
-     * Processa upload pela página de gerenciamento.
-     */
     public function manageUpload(Request $request)
     {
         $this->checkAdmin();
@@ -120,7 +102,6 @@ class BoletoController extends Controller
         $slugCliente = $cliente ? Str::slug($cliente, '-') : 'cliente';
         $filename    = "{$pagamento->id}_{$slugCliente}.pdf";
 
-        // Garante que a pasta exista
         $dir = (string) $pagamento->id;
         $fullPath = storage_path("app/boletos/{$dir}");
         if (! File::exists($fullPath)) {
@@ -131,7 +112,6 @@ class BoletoController extends Controller
             Storage::disk('boletos')->delete($pagamento->boleto);
         }
 
-        // Salva no disco 'boletos'
         $path = Storage::disk('boletos')->putFileAs(
             $dir,
             $request->file('boleto'),
@@ -145,8 +125,55 @@ class BoletoController extends Controller
         $pagamento->boleto = $path;
         $pagamento->save();
 
-        return redirect()
-            ->route('boleto.manage.form')
-            ->with('success', 'Boleto enviado com sucesso.');
+        ActivityLoggerService::registrar('Boletos', "Atualizou boleto para pagamento ID {$pagamento->id} (upload via gerenciamento).");
+
+        return redirect()->route('boleto.manage.form')->with('success', 'Boleto enviado com sucesso.');
     }
+
+    public function marcarComoPago(Request $request)
+    {
+        $this->checkAdmin();
+
+        $request->validate([
+            'pagamento_id' => 'required|exists:pagamentos,id',
+            'descricao'    => 'nullable|string|max:255',
+            'comprovante'  => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+        ]);
+
+        $pagamento = Pagamento::findOrFail($request->pagamento_id);
+
+        if ($request->hasFile('comprovante')) {
+            $filename = 'comprovante_' . $pagamento->id . '.' . $request->file('comprovante')->getClientOriginalExtension();
+            $path = $request->file('comprovante')->storeAs('private/comprovantes', $filename, 'local');
+            $pagamento->comprovante = $path;
+        }
+
+        $pagamento->status = 'pago';
+        $pagamento->save();
+
+        ActivityLoggerService::registrar('Boletos', "Marcou pagamento ID {$pagamento->id} como pago. Descrição: " . $request->input('descricao'));
+
+        return redirect()->route('boleto.manage.form')->with('success', 'Pagamento atualizado para PAGO com sucesso.');
+    }
+
+    public function baixarComprovante(Pagamento $pagamento)
+{
+    $this->checkAdmin();
+
+    if (! $pagamento->comprovante || ! Storage::disk('local')->exists($pagamento->comprovante)) {
+        abort(404, 'Comprovante não encontrado.');
+    }
+
+    // Log da atividade
+    ActivityLoggerService::registrar(
+        'Boletos',
+        "Baixou comprovante do pagamento ID {$pagamento->id}."
+    );
+
+    return Storage::disk('local')->download(
+        $pagamento->comprovante,
+        "comprovante_{$pagamento->id}." . pathinfo($pagamento->comprovante, PATHINFO_EXTENSION)
+    );
+}
+
 }

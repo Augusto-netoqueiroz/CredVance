@@ -303,3 +303,18 @@ Route::get('boleto/download/{pagamento}', [BoletoController::class, 'download'])
         Route::post('boleto/gerenciar', [BoletoController::class, 'manageUpload'])
             ->name('boleto.manage.upload');
     });
+
+
+
+    Route::get('/cliente/contrato/{contrato}/download', [ClienteController::class, 'downloadContrato'])
+    ->name('cliente.contrato.download')
+    ->middleware('auth');
+
+
+    Route::post('/boletos/status/pago', [BoletoController::class, 'marcarComoPago'])
+    ->name('boleto.marcar.pago')
+    ->middleware('auth');
+
+    Route::get('/boletos/comprovante/{pagamento}', [BoletoController::class, 'baixarComprovante'])
+    ->name('boleto.comprovante.download')
+    ->middleware('auth');
