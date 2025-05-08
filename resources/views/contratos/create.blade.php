@@ -17,6 +17,7 @@
         <input type="hidden" name="longitude" id="longitude">
         <input type="hidden" name="senha_confirm" id="senha_confirm_hidden">
 
+        {{-- Cliente --}}
         <div class="mb-4">
           <label for="cliente_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Cliente</label>
           @if(Auth::user()->role === 'admin')
@@ -31,11 +32,9 @@
             <input type="hidden" name="cliente_id" value="{{ Auth::user()->id }}">
             <input type="text" disabled readonly id="cliente_dados" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100" value="{{ Auth::user()->name }} ({{ Auth::user()->email }})" data-cpf="{{ Auth::user()->cpf ?? '000.000.000-00' }}" data-telefone="{{ Auth::user()->telefone ?? '(00) 00000-0000' }}" data-email="{{ Auth::user()->email }}" data-nome="{{ Auth::user()->name }}">
           @endif
-          @error('cliente_id')
-            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-          @enderror
         </div>
 
+        {{-- Plano de Cota --}}
         <div class="mb-4">
           <label for="consorcio_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Plano de Cota</label>
           <select name="consorcio_id" id="consorcio_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
@@ -43,19 +42,15 @@
               <option value="{{ $cons->id }}">{{ $cons->plano }} — {{ $cons->prazo }} meses</option>
             @endforeach
           </select>
-          @error('consorcio_id')
-            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-          @enderror
         </div>
 
+        {{-- Quantidade de Cotas --}}
         <div class="mb-4">
           <label for="quantidade_cotas" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantidade de Cotas</label>
-          <input type="number" name="quantidade_cotas" id="quantidade_cotas" class="mt-1 block w-1/3 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" value="{{ old('quantidade_cotas',1) }}" min="1" required>
-          @error('quantidade_cotas')
-            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-          @enderror
+          <input type="number" name="quantidade_cotas" id="quantidade_cotas" class="mt-1 block w-1/3 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" value="{{ old('quantidade_cotas', 1) }}" min="1" required>
         </div>
 
+        {{-- Botão --}}
         <div class="text-right">
           <button type="button" onclick="abrirModalContrato()" class="inline-flex items-center px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-white text-sm font-medium rounded-md shadow">
             Criar Contrato
@@ -65,6 +60,7 @@
     </div>
   </div>
 
+  {{-- Modal de Confirmação --}}
   <div id="modalContrato" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg w-full max-w-3xl mx-4 sm:mx-6 md:mx-auto p-6 relative max-h-[90vh] overflow-y-auto">
       <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirmação do Contrato</h3>
@@ -89,6 +85,16 @@
 
       <button onclick="fecharModalContrato()" class="absolute top-2 right-3 text-gray-500 dark:text-gray-300 hover:text-red-600 text-lg font-bold">
         ×
+      </button>
+    </div>
+  </div>
+
+  {{-- Mini Modal de Erro --}}
+  <div id="miniModalErro" class="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 text-center border border-red-300 dark:border-red-500">
+      <p id="miniModalErroMsg" class="text-sm text-red-700 dark:text-red-300 font-medium mb-4">Erro</p>
+      <button onclick="fecharMiniModalErro()" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 text-sm">
+        OK
       </button>
     </div>
   </div>
@@ -148,18 +154,51 @@
       document.getElementById('modalContrato').classList.add('hidden');
     }
 
-    function confirmarContrato() {
+    function exibirMiniModalErro(mensagem, focoId = null) {
+      document.getElementById('miniModalErroMsg').innerText = mensagem;
+      document.getElementById('miniModalErro').classList.remove('hidden');
+      if (focoId) {
+        setTimeout(() => {
+          document.getElementById(focoId)?.focus();
+        }, 100);
+      }
+    }
+
+    function fecharMiniModalErro() {
+      document.getElementById('miniModalErro').classList.add('hidden');
+    }
+
+    async function confirmarContrato() {
       const cpfDigitado = document.getElementById('cpf_confirm').value.trim();
       const senha = document.getElementById('senha_confirm_input').value.trim();
       const cpfReal = "{{ Auth::user()->cpf }}";
 
       if (cpfDigitado !== cpfReal) {
-        alert("O CPF informado não confere com o seu.");
+        exibirMiniModalErro("CPF incorreto. Verifique e tente novamente.", 'cpf_confirm');
         return;
       }
 
       if (!senha || senha.length < 4) {
-        alert("Digite sua senha para confirmação.");
+        exibirMiniModalErro("Senha inválida. Ela deve ter pelo menos 4 caracteres.", 'senha_confirm_input');
+        return;
+      }
+
+      try {
+        const response = await fetch("/verifica-senha", {
+          method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': "{{ csrf_token() }}"
+          },
+          body: JSON.stringify({ senha })
+        });
+
+        if (!response.ok) {
+          exibirMiniModalErro("Senha incorreta. Tente novamente.", 'senha_confirm_input');
+          return;
+        }
+      } catch (err) {
+        exibirMiniModalErro("Erro na validação da senha. Tente novamente.");
         return;
       }
 
@@ -178,14 +217,12 @@
             document.getElementById('formContrato').submit();
           },
           (error) => {
-            alert("É necessário autorizar a localização para finalizar o contrato.");
-            return;
+            exibirMiniModalErro("É necessário autorizar a localização para finalizar o contrato.");
           },
           { enableHighAccuracy: true, timeout: 7000 }
         );
       } else {
-        alert("Seu navegador não suporta geolocalização.");
-        return;
+        exibirMiniModalErro("Seu navegador não suporta geolocalização.");
       }
     }
   </script>

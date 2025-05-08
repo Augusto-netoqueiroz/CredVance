@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\LandingRegisterController;
 use App\Http\Controllers\Auth\PasswordResetController;
@@ -19,10 +20,18 @@ use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\BoletoController;
+ 
 
 
 
 
+
+
+Route::post('/verifica-senha', function (Illuminate\Http\Request $request) {
+    return Hash::check($request->senha, auth()->user()->password)
+        ? response()->json(['ok' => true])
+        : response()->json(['ok' => false], 401);
+})->middleware('auth');
 
 
 //------------------inicio das rotas não protegidas-----------------// 
