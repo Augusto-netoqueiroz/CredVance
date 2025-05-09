@@ -55,25 +55,52 @@
     </div>
   </div>
 
-  <!-- Modal de Confirmação com responsividade total -->
-  <div id="modalContrato" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-start justify-center p-4 overflow-y-auto hidden">
-    <div class="w-full max-w-screen-md sm:max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-4 sm:p-5 md:p-6 max-h-[42vh] overflow-y-auto">
-      <h3 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Confirmação do Contrato</h3>
-      <div id="conteudoContrato" class="text-sm text-gray-700 dark:text-gray-200 space-y-4 max-h-[40vh] overflow-y-auto pr-1"></div>
-
-      <div class="mt-6 space-y-4">
-        <label for="cpf_confirm" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirme seu CPF</label>
-        <input type="text" id="cpf_confirm" class="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-        <label for="senha_confirm_input" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Confirme sua senha</label>
-        <input type="password" id="senha_confirm_input" class="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+  <!-- Modal de Confirmação Compacto e Responsivo -->
+  <div id="modalContrato" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+    <div class="w-full max-w-3xl bg-white dark:bg-gray-800 rounded-xl shadow-xl transform transition-all overflow-hidden" style="max-height: 80vh;">
+      <div class="flex justify-between items-center border-b p-4 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white">Confirmação do Contrato</h3>
+        <button onclick="fecharModalContrato()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+          </svg>
+        </button>
       </div>
-
-      <div class="flex justify-end mt-6 gap-3 border-t pt-4 dark:border-gray-700">
-        <button type="button" onclick="fecharModalContrato()" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600">Cancelar</button>
-        <button type="button" onclick="confirmarContrato()" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 font-semibold">Aceitar e Enviar</button>
+      
+      <div class="overflow-auto p-4" style="max-height: calc(80vh - 130px);">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Lado esquerdo: Conteúdo do contrato -->
+          <div class="text-sm text-gray-700 dark:text-gray-200" id="conteudoContrato"></div>
+          
+          <!-- Lado direito: Formulário de confirmação -->
+          <div class="flex flex-col">
+            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 class="font-medium text-gray-800 dark:text-white mb-3">Confirmação de Identidade</h4>
+              
+              <div class="space-y-3">
+                <div>
+                  <label for="cpf_confirm" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirme seu CPF</label>
+                  <input type="text" id="cpf_confirm" class="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+                
+                <div>
+                  <label for="senha_confirm_input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirme sua senha</label>
+                  <input type="password" id="senha_confirm_input" class="w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-
-
+      
+      <div class="border-t p-4 dark:border-gray-700 flex justify-end gap-3 sticky bottom-0 bg-white dark:bg-gray-800">
+        <button type="button" onclick="fecharModalContrato()" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600">
+          Cancelar
+        </button>
+        <button type="button" onclick="confirmarContrato()" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 font-semibold">
+          Aceitar e Enviar
+        </button>
+      </div>
     </div>
   </div>
 
@@ -118,23 +145,51 @@
       const vencimentoPrimeiraParcela = '10/06/2025';
 
       const contrato = `
-        <p><strong>CONTRATO DE PARTICIPAÇÃO EM GRUPO DE CONSÓRCIO</strong></p>
-        <p>Cliente: <strong>${nome}</strong><br>CPF: <strong>${cpf}</strong><br>Telefone: <strong>${telefone}</strong><br>E-mail: <strong>${email}</strong></p>
-        <p><strong>Plano escolhido:</strong> ${plano}<br><strong>Quantidade de cotas:</strong> ${qtdCotas}</p>
-        <ul class="list-disc pl-6">
-          <li>Efetuar os pagamentos das parcelas conforme estipulado no plano;</li>
-          <li>Respeitar os critérios de contemplação;</li>
-          <li>Manter dados atualizados;</li>
-          <li>Reconhecer a importância da adimplência;</li>
-          <li>Entender os riscos da inadimplência.</li>
-        </ul>
-        <p><strong>Detalhamento Financeiro:</strong></p>
-        <p>1ª parcela: <strong>R$ ${(valorParcelaInicial * qtdCotas).toFixed(2)}</strong><br>
-        Última parcela: <strong>R$ ${(valorParcelaFinal * qtdCotas).toFixed(2)}</strong><br>
-        Total: <strong>R$ ${valorTotal.toFixed(2)}</strong><br>
-        Retorno: <strong>R$ ${retornoTotal.toFixed(2)}</strong><br>
-        Vencimento da 1ª: <strong>${vencimentoPrimeiraParcela}</strong></p>
-        <p class="mt-4 font-semibold">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>`;
+        <div>
+          <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
+          
+          <div class="mb-3">
+            <p class="text-xs"><span class="font-medium">Nome:</span> ${nome}</p>
+            <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf}</p>
+            <p class="text-xs"><span class="font-medium">E-mail:</span> ${email}</p>
+            <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${plano}</p>
+            <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtdCotas}</p>
+          </div>
+          
+          <div class="mb-3">
+            <p class="text-xs font-medium mb-1">Termos do Contrato:</p>
+            <ul class="list-disc pl-4 text-xs space-y-0">
+              Efetuar os pagamentos das parcelas conforme estipulado;
+               Respeitar os critérios de contemplação; 
+               Manter dados atualizados; 
+               Entender os riscos da inadimplência. 
+            </ul>
+          </div>
+          
+          <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
+            <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
+            <div class="grid grid-cols-2 gap-1 text-xs">
+              <p><span class="font-medium">1ª parcela:</span></p>
+              <p class="text-right">R$ ${(valorParcelaInicial * qtdCotas).toFixed(2)}</p>
+              
+              <p><span class="font-medium">Última parcela:</span></p>
+              <p class="text-right">R$ ${(valorParcelaFinal * qtdCotas).toFixed(2)}</p>
+              
+              <p><span class="font-medium">Total:</span></p>
+              <p class="text-right">R$ ${valorTotal.toFixed(2)}</p>
+              
+              <p><span class="font-medium">Retorno:</span></p>
+              <p class="text-right">R$ ${retornoTotal.toFixed(2)}</p>
+              
+              <p><span class="font-medium">Vencimento da 1ª:</span></p>
+              <p class="text-right">${vencimentoPrimeiraParcela}</p>
+            </div>
+          </div>
+          
+          <p class="text-xs font-medium text-center">
+            Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.
+          </p>
+        </div>`;
 
       document.getElementById('conteudoContrato').innerHTML = contrato;
       document.getElementById('modalContrato').classList.remove('hidden');
