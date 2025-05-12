@@ -1,55 +1,100 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
-    <h1 class="mb-4">Usuários</h1>
+<div class="container" x-data="{
+    users: @json($usuarios->map(fn($u) => [
+        'id'    => $u->id,
+        'name'  => $u->name,
+        'email' => $u->email,
+        'role'  => ucfirst($u->role),
+        'status'=> $u->status
+    ])),
+    search: '',
+    page: 1,
+    perPage: 10,
+    filteredUsers() {
+        return this.users.filter(user => {
+            return ['name','email','role','status'].some(key =>
+                user[key].toLowerCase().includes(this.search.toLowerCase())
+            );
+        });
+    },
+    totalPages() {
+        return Math.ceil(this.filteredUsers().length / this.perPage) || 1;
+    },
+    paginatedUsers() {
+        return this.filteredUsers().slice((this.page - 1) * this.perPage, this.page * this.perPage);
+    }
+}">
+    <h1 class="mb-4 flex items-center gap-2 text-2xl">
+        <i data-lucide="users" class="inline"></i> Usuários
+    </h1>
 
-    <!-- Botão para abrir o modal -->
-    <div class="mb-3">
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario">
-            Novo Usuário
+    <div class="mb-3 flex items-center gap-2">
+        <button class="btn btn-primary flex items-center gap-1" data-bs-toggle="modal" data-bs-target="#modalNovoUsuario">
+            <i data-lucide="user-plus"></i> Novo Usuário
         </button>
+        <input type="text" placeholder="Pesquisar..." class="form-control w-1/3 ms-auto" x-model="search">
     </div>
 
     <div class="card">
         <div class="card-body">
-            <p><strong>Total de usuários:</strong> {{ $usuarios->count() }}</p>
+            <p><strong>Total de usuários:</strong> <span x-text="filteredUsers().length"></span></p>
 
-            <table class="table table-striped mt-3">
-                <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Email</th>
-                        <th>Perfil</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($usuarios as $usuario)
-                    <tr>
-                        <td>{{ $usuario->name }}</td>
-                        <td>{{ $usuario->email }}</td>
-                        <td>{{ ucfirst($usuario->role) }}</td>
-                        <td>
-                            @if($usuario->status === 'ativo')
-                                <span class="badge bg-success">Ativo</span>
-                            @else
-                                <span class="badge bg-secondary">Inativo</span>
-                            @endif
-                        </td>
-                        <td>
-                            <a href="{{ route('admin.usuarios.edit', $usuario) }}" class="btn btn-sm btn-warning">Editar</a>
-                            <form action="{{ route('admin.usuarios.destroy', $usuario) }}" method="POST" style="display:inline;">
-                                @csrf
-                                @method('DELETE')
-                                <button class="btn btn-sm btn-danger" onclick="return confirm('Confirma excluir?')">Excluir</button>
-                            </form>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+            <div class="overflow-x-auto">
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>E-mail</th>
+                            <th>Perfil</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="usuario in paginatedUsers()" :key="usuario.id">
+                            <tr>
+                                <td x-text="usuario.name"></td>
+                                <td x-text="usuario.email"></td>
+                                <td x-text="usuario.role"></td>
+                                <td>
+                                    <span :class="{
+                                        'badge bg-success': usuario.status === 'ativo',
+                                        'badge bg-secondary': usuario.status !== 'ativo'
+                                    }" x-text="usuario.status === 'ativo' ? 'Ativo' : 'Inativo'"></span>
+                                </td>
+                                <td class="flex gap-1">
+                                    <a :href="`/admin/usuarios/${usuario.id}/edit`" class="btn btn-sm btn-warning flex items-center gap-1">
+                                        <i data-lucide="edit-2"></i>
+                                    </a>
+                                    <form :action="`/admin/usuarios/${usuario.id}`" method="POST" style="display:inline;">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-danger flex items-center gap-1" onclick="return confirm('Confirma excluir?')">
+                                            <i data-lucide="trash-2"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginação -->
+            <div class="mt-3 flex justify-center items-center space-x-2">
+                <button class="btn btn-sm btn-outline-primary" :disabled="page <= 1" @click="page--">Anterior</button>
+                <template x-for="num in Array.from({ length: totalPages() }, (_, i) => i + 1)" :key="num">
+                    <button
+                        class="btn btn-sm"
+                        :class="num === page ? 'btn-primary' : 'btn-outline-primary'"
+                        @click="page = num"
+                        x-text="num"
+                    ></button>
+                </template>
+                <button class="btn btn-sm btn-outline-primary" :disabled="page >= totalPages()" @click="page++">Próximo</button>
+            </div>
         </div>
     </div>
 </div>
@@ -113,7 +158,7 @@ document.addEventListener("DOMContentLoaded", function () {
             body: formData,
             headers: {
                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content"),
-                "Accept": "application/json" // Garante que o backend retorne JSON
+                "Accept": "application/json"
             }
         })
         .then(response => {
@@ -139,4 +184,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 });
 </script>
+
+<!-- Lucide Icons -->
+<script src="https://unpkg.com/lucide/dist/lucide.min.js"></script>
+<script>lucide.replace();</script>
 @endsection

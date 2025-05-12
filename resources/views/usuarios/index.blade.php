@@ -1,383 +1,234 @@
-<!-- resources/views/usuarios/index.blade.php -->
-
-<!-- Carregando Bootstrap e Bootstrap Icons (caso ainda não tenha) -->
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-/>
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
-/>
-
-<!-- Sobrescrevendo estilos no modo escuro (Tailwind classes) -->
-<style>
-.dark .navbar,
-.dark .navbar-nav,
-.dark .navbar-light,
-.dark .bg-white {
-  background-color: #1f2937 !important; /* Tailwind gray-900 */
-  color: #f9fafb !important;           /* Tailwind gray-50 */
-}
-
-.dark table,
-.dark thead,
-.dark tbody,
-.dark .table,
-.dark .table td,
-.dark .table th {
-  background-color: #1f2937 !important;
-  color: #f9fafb !important;
-  border-color: #4b5563 !important; /* Tailwind gray-600 */
-}
-
-.dark tr:hover {
-  background-color: #374151 !important; /* Tailwind gray-700 */
-}
-</style>
-
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-2xl text-center w-full text-gray-800 dark:text-gray-200">
-                Usuários
-            </h2>
-            <div class="absolute right-10">
-                <button
-                  id="btnNovoUsuario"
-                  class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded shadow"
-                >
-                    Novo Usuário
-                </button>
-            </div>
-        </div>
+        <h2 class="font-semibold text-2xl text-gray-800 dark:text-white leading-tight">
+            Usuários
+        </h2>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
 
-            <!-- Mensagem de sucesso (invisível no início) -->
-            <div 
-              id="successMessage" 
-              class="hidden mb-4 p-4 rounded border border-green-300 bg-green-100 text-green-800"
-            >
-                Usuário criado com sucesso e link de finalização enviado!
-            </div>
+    @if(session('success'))
+        <div class="mb-4 bg-green-100 text-green-800 p-3 rounded">
+            {{ session('success') }}
+        </div>
+    @endif
 
-            <div class="overflow-x-auto">
-                <!-- Tabela de usuários -->
-                <table class="table min-w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden text-base">
-                    <thead class="bg-gray-100 dark:bg-gray-700">
-                        <tr class="text-left text-gray-700 dark:text-gray-300">
-                            <th class="py-4 px-6">ID</th>
-                            <th class="py-4 px-6">Nome</th>
-                            <th class="py-4 px-6">CPF</th>
-                            <th class="py-4 px-6">Email</th>
-                            <th class="py-4 px-6">Telefone</th>
-                            <th class="py-4 px-6">Tipo</th>
-                            <th class="py-4 px-6 text-center">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white dark:bg-gray-800">
-                        @foreach ($usuarios as $user)
-                            <tr class="border-b dark:border-gray-700 text-gray-800 dark:text-gray-200">
-                                <td class="py-4 px-6">{{ $user->id }}</td>
-                                <td class="py-4 px-6">{{ $user->name }}</td>
-                                <td class="py-4 px-6">{{ $user->cpf }}</td>
-                                <td class="py-4 px-6">{{ $user->email }}</td>
-                                <td class="py-4 px-6">{{ $user->telefone }}</td>
-                                <td class="py-4 px-6">
-                                    <span
-                                      class="inline-block px-3 py-1 text-sm font-semibold rounded-full
-                                             {{ $user->role === 'admin'
-                                                 ? 'bg-green-100 text-green-800 dark:bg-green-700 dark:text-green-100'
-                                                 : 'bg-blue-100 text-blue-800 dark:bg-blue-700 dark:text-blue-100'
-                                             }}"
-                                    >
-                                        {{ ucfirst($user->role) }}
-                                    </span>
-                                </td>
-                                <td class="py-4 px-6 text-center space-x-2">
-                                    <button
-                                      class="editarUsuario bg-yellow-400 hover:bg-yellow-500 text-gray-900 dark:text-white px-4 py-2 rounded shadow"
-                                      data-id="{{ $user->id }}"
-                                    >
-                                        ✏️ Editar
+    @if(session('error'))
+        <div class="mb-4 bg-red-100 text-red-800 p-3 rounded">
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <div class="py-6 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen" 
+         x-data="{
+            users: {{ Js::from($usuarios->map(fn($u) => [
+                'id'    => $u->id,
+                'name'  => $u->name,
+                'email' => $u->email,
+                'role'  => ucfirst($u->role),
+                // trazemos o booleano 1/0; no JS ele vira true/false
+                'status'=> $u->ativo,
+            ])) }},
+            search: '',
+            page: 1,
+            perPage: 10,
+            get filtered() {
+                return this.users.filter(u =>
+                    ['name','email','role'].some(k =>
+                        (u[k] || '').toLowerCase().includes(this.search.toLowerCase())
+                    )
+                );
+            },
+            get totalPages() {
+                return Math.max(1, Math.ceil(this.filtered.length / this.perPage));
+            },
+            get paginated() {
+                return this.filtered.slice((this.page-1)*this.perPage, this.page*this.perPage);
+            }
+        }">
+
+        <!-- Ações e Filtro -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <button id="btnNovoUsuario"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow">
+                <i data-lucide="user-plus" class="w-4 h-4 mr-1"></i> Novo Usuário
+            </button>
+            <input type="text" placeholder="Pesquisar..." x-model="search"
+                   class="w-full md:w-1/3 border border-gray-300 rounded-md px-3 py-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" />
+        </div>
+
+        <!-- Total -->
+        <p class="text-gray-700 dark:text-gray-200 font-medium mt-4">
+            Total de usuários: <span x-text="filtered.length"></span>
+        </p>
+
+        <!-- Tabela -->
+        <div class="overflow-x-auto mt-4">
+            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">Nome</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">E-mail</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">Perfil</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">Status</th>
+                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-600 dark:text-gray-300 uppercase">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="u in paginated" :key="u.id">
+                        <tr>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100" x-text="u.name"></td>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100" x-text="u.email"></td>
+                            <td class="px-6 py-4 text-sm text-gray-900 dark:text-gray-100" x-text="u.role"></td>
+                            <td class="px-6 py-4">
+                                <span :class="u.status
+                                        ? 'px-2 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800'
+                                        : 'px-2 inline-flex text-xs font-semibold rounded-full bg-gray-100 text-gray-800'"
+                                      x-text="u.status ? 'Ativo' : 'Inativo'">
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-center space-x-2">
+                                <button type="button"
+                                        class="editarUsuario bg-yellow-400 hover:bg-yellow-500 text-gray-900 dark:text-white p-2 rounded shadow"
+                                        @click="openEdit(u)">
+                                    <i data-lucide="edit-2" class="w-4 h-4"></i>
+                                </button>
+                                <form method="POST" x-bind:action="`/usuarios/${u.id}/delete`" style="display:inline-block;">
+                                    @csrf
+                                    <button type="submit"
+                                            class="bg-red-600 hover:bg-red-700 text-white p-2 rounded shadow"
+                                            onclick="return confirm('Tem certeza que deseja desabilitar este usuário?')">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
                                     </button>
-                                    <form 
-                                      action="{{ route('usuarios.delete', $user->id) }}" 
-                                      method="POST"
-                                      style="display: inline-block;"
-                                    >
-                                        @csrf
-                                        <button
-                                            type="submit"
-                                            class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded shadow"
-                                            onclick="return confirm('Tem certeza que deseja desabilitar este usuário?')"
-                                        >
-                                            🗑️ Deletar
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                                </form>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
 
-                <!-- Paginação -->
-                <div class="mt-4">
-                    <!-- Usando estilo Bootstrap -->
-                    {{ $usuarios->links('pagination::bootstrap-5') }}
+        <!-- Paginação padrão do Laravel -->
+        <div class="mt-4">
+            {{ $usuarios->links() }}
+        </div>
 
-                    <!-- Se preferir Tailwind padrão do Laravel, use: -->
-                    {{-- {{ $usuarios->links() }} --}}
+        <!-- MODAL NOVO USUÁRIO -->
+        <div id="modalUsuario" tabindex="-1"
+             class="fixed inset-0 z-50 flex justify-center items-center overflow-y-auto overflow-x-hidden bg-black bg-opacity-50 hidden">
+            <div class="relative w-full max-w-lg p-4">
+                <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
+                    <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Novo Usuário</h3>
+                        <button @click="document.getElementById('modalUsuario').classList.add('hidden')"
+                                class="text-gray-400 bg-transparent hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <form id="formNovoUsuario" action="{{ route('usuarios.storeBasic') }}" method="POST" class="p-6 space-y-4">
+                        @csrf
+                        <div>
+                            <label for="name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nome</label>
+                            <input type="text" name="name" id="name" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">E-mail</label>
+                            <input type="email" name="email" id="email" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="cpf" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">CPF</label>
+                            <input type="text" name="cpf" id="cpf" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="telefone" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Telefone</label>
+                            <input type="text" name="telefone" id="telefone"
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="role" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Perfil</label>
+                            <select id="role" name="role" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                                <option value="cliente" selected>Cliente</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="text-right">
+                            <button type="submit"
+                                    class="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                                Cadastrar
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Modal (inspirado no estilo x-guest-layout) -->
-    <div id="modalUsuario" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center">
-        <div 
-          class="w-full sm:max-w-md mt-6 p-6 bg-white dark:bg-gray-800 shadow-md overflow-hidden sm:rounded-lg"
-          style="max-height: 90vh; overflow-y: auto;"
-        >
-            <h3 class="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                Novo Usuário
-            </h3>
-
-            <!-- Mensagens de erro (exibidas se houver validação 422) -->
-            <div 
-              id="errorMessages" 
-              class="hidden mb-4 p-4 bg-red-100 text-red-700 rounded border border-red-300 text-sm"
-            ></div>
-
-            <form id="formUsuario">
-                @csrf
-                <input type="hidden" id="user_id" name="user_id">
-
-                <!-- Nome -->
-                <div>
-                    <label 
-                      for="name" 
-                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
-                    >
-                        Nome:
-                    </label>
-                    <input
-                      id="name"
-                      name="name"
-                      type="text"
-                      required
-                      autocomplete="name"
-                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                    />
+        <!-- MODAL EDITAR USUÁRIO -->
+        <div id="modalEditarUsuario" tabindex="-1"
+             class="fixed inset-0 z-50 flex justify-center items-center overflow-y-auto overflow-x-hidden bg-black bg-opacity-50 hidden">
+            <div class="relative w-full max-w-lg p-4">
+                <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
+                    <div class="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-600">
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Editar Usuário</h3>
+                        <button @click="document.getElementById('modalEditarUsuario').classList.add('hidden')"
+                                class="text-gray-400 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <form id="formEditarUsuario" method="POST" action="" class="p-6 space-y-4">
+                        @csrf
+                        @method('PUT')
+                        <div>
+                            <label for="edit_name" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nome</label>
+                            <input type="text" name="name" id="edit_name" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="edit_email" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">E-mail</label>
+                            <input type="email" name="email" id="edit_email" required
+                                   class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                        </div>
+                        <div>
+                            <label for="edit_role" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Perfil</label>
+                            <select name="role" id="edit_role" required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white">
+                                <option value="cliente">Cliente</option>
+                                <option value="admin">Administrador</option>
+                            </select>
+                        </div>
+                        <div class="text-right">
+                            <button type="submit"
+                                    class="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                                Salvar Alterações
+                            </button>
+                        </div>
+                    </form>
                 </div>
-
-                <!-- CPF -->
-                <div class="mt-4">
-                    <label 
-                      for="cpf" 
-                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
-                    >
-                        CPF:
-                    </label>
-                    <input
-                      id="cpf"
-                      name="cpf"
-                      type="text"
-                      required
-                      autocomplete="on"
-                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-
-                <!-- Telefone -->
-                <div class="mt-4">
-                    <label 
-                      for="telefone" 
-                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
-                    >
-                        Telefone:
-                    </label>
-                    <input
-                      id="telefone"
-                      name="telefone"
-                      type="text"
-                      required
-                      autocomplete="tel"
-                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-
-                <!-- Email -->
-                <div class="mt-4">
-                    <label 
-                      for="email"
-                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
-                    >
-                        Email:
-                    </label>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      required
-                      autocomplete="email"
-                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                    />
-                </div>
-
-                <!-- Tipo (Role) -->
-                <div class="mt-4">
-                    <label 
-                      for="role" 
-                      class="block font-medium text-sm text-gray-700 dark:text-gray-300"
-                    >
-                        Tipo:
-                    </label>
-                    <select
-                      id="role"
-                      name="role"
-                      required
-                      class="block mt-1 w-full rounded border-gray-300 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                    >
-                        <option value="cliente">Cliente</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
-
-                <!-- Botões -->
-                <div class="flex items-center justify-end mt-4">
-                    <button
-                      type="button"
-                      id="fecharModal"
-                      class="px-4 py-2 bg-gray-400 text-white rounded mr-2"
-                    >
-                        Cancelar
-                    </button>
-
-                    <!-- Botão Salvar com spinner -->
-                    <button
-                      type="button"
-                      id="salvarUsuario"
-                      class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded relative"
-                    >
-                        <span id="btnText">Salvar</span>
-                        <span id="btnSpinner" class="hidden ml-2">
-                            <!-- Exemplo de spinner (Tailwind) -->
-                            <svg 
-                              class="animate-spin h-5 w-5 text-white" 
-                              xmlns="http://www.w3.org/2000/svg" 
-                              fill="none" 
-                              viewBox="0 0 24 24"
-                            >
-                              <circle 
-                                class="opacity-25" 
-                                cx="12" 
-                                cy="12" 
-                                r="10" 
-                                stroke="currentColor" 
-                                stroke-width="4"
-                              />
-                              <path 
-                                class="opacity-75" 
-                                fill="currentColor" 
-                                d="M4 12a8 8 0 018-8v8z"
-                              />
-                            </svg>
-                        </span>
-                    </button>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
 
-    <!-- Scripts do Bootstrap (opcional) e JS do form -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- SCRIPT -->
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const novoModal   = document.getElementById('modalUsuario');
+                const editarModal = document.getElementById('modalEditarUsuario');
+                const formEditar  = document.getElementById('formEditarUsuario');
 
-    <script>
-        // Remove pontuação do CPF
-        function limparPontuacaoCPF(cpf) {
-            return cpf.replace(/\D/g, '');
-        }
+                document.getElementById('btnNovoUsuario').addEventListener('click', () => {
+                    novoModal.classList.remove('hidden');
+                });
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const modalUsuario = document.getElementById('modalUsuario');
-            const btnNovoUsuario = document.getElementById('btnNovoUsuario');
-            const btnFecharModal = document.getElementById('fecharModal');
-            const btnSalvarUsuario = document.getElementById('salvarUsuario');
-            const errorMessages = document.getElementById('errorMessages');
-            const successMessage = document.getElementById('successMessage');
-            const btnSpinner = document.getElementById('btnSpinner');
-            const btnText = document.getElementById('btnText');
-
-            // Abrir modal
-            btnNovoUsuario.addEventListener('click', () => {
-                modalUsuario.classList.remove('hidden');
-                modalUsuario.classList.add('flex');
-                errorMessages.classList.add('hidden');
-                errorMessages.innerHTML = '';
-                // limpa campos
-                document.getElementById('formUsuario').reset();
-                successMessage.classList.add('hidden'); // caso já tenha aparecido antes
-            });
-
-            // Fechar modal
-            btnFecharModal.addEventListener('click', () => {
-                modalUsuario.classList.remove('flex');
-                modalUsuario.classList.add('hidden');
-            });
-
-            // Evento Salvar
-            btnSalvarUsuario.addEventListener('click', async function () {
-                // Preparar UI para "salvando..."
-                btnSalvarUsuario.disabled = true;
-                btnSpinner.classList.remove('hidden');
-                btnText.textContent = 'Salvando...';
-
-                // Pegar dados do form
-                const data = {
-                    name: document.getElementById('name').value,
-                    cpf: limparPontuacaoCPF(document.getElementById('cpf').value),
-                    telefone: document.getElementById('telefone').value,
-                    email: document.getElementById('email').value,
-                    role: document.getElementById('role').value,
+                window.openEdit = function(user) {
+                    document.getElementById('edit_name').value  = user.name;
+                    document.getElementById('edit_email').value = user.email;
+                    document.getElementById('edit_role').value  = user.role.toLowerCase();
+                    formEditar.action = `/usuario/editar/${user.id}`; // ajuste conforme rota real
+                    editarModal.classList.remove('hidden');
                 };
-
-                try {
-                    // Enviar requisição
-                    await axios.post("{{ route('usuarios.storeBasic') }}", data);
-                    
-                    // Se chegou aqui, deu certo:
-                    // Fecha o modal, limpa form e mostra msg de sucesso
-                    modalUsuario.classList.remove('flex');
-                    modalUsuario.classList.add('hidden');
-                    successMessage.classList.remove('hidden');
-
-                } catch (error) {
-                    // Se houve erro de validação (422)
-                    if (error.response && error.response.status === 422) {
-                        const errors = error.response.data.errors;
-                        let messages = '';
-                        for (let campo in errors) {
-                            messages += '<div>' + errors[campo].join(', ') + '</div>';
-                        }
-                        errorMessages.innerHTML = messages;
-                        errorMessages.classList.remove('hidden');
-                    } else {
-                        // Erro inesperado
-                        console.error(error);
-                        errorMessages.innerHTML = 'Ocorreu um erro inesperado.';
-                        errorMessages.classList.remove('hidden');
-                    }
-                } finally {
-                    // Restaurar estado do botão
-                    btnSalvarUsuario.disabled = false;
-                    btnSpinner.classList.add('hidden');
-                    btnText.textContent = 'Salvar';
-                }
             });
-        });
-    </script>
+        </script>
+    </div>
 </x-app-layout>

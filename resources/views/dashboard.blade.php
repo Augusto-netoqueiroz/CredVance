@@ -62,19 +62,16 @@
                     class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg w-full max-w-lg relative"
                     onclick="event.stopPropagation()"
                 >
-                    <!-- Export Buttons -->
                     <div class="flex justify-end space-x-2 mb-4">
                         <button onclick="exportData('{{ strtolower($modal) }}','pdf')" class="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition">PDF</button>
                         <button onclick="exportData('{{ strtolower($modal) }}','excel')" class="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition">Excel</button>
                         <button onclick="exportData('{{ strtolower($modal) }}','csv')" class="text-xs bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition">CSV</button>
                     </div>
-
                     <div class="flex justify-between items-center mb-3">
                         <h2 class="text-lg font-semibold text-gray-800 dark:text-white">Detalhes - {{ $modal }}</h2>
                         <button onclick="closeModal('modal{{ $modal }}')" class="text-sm text-red-500 hover:underline">Fechar</button>
                     </div>
                     <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">Informações detalhadas sobre {{ strtolower($modal) }}.</p>
-
                     <div class="overflow-x-auto">
                         <table class="min-w-full text-sm text-left text-gray-700 dark:text-gray-300">
                             <thead class="bg-gray-100 dark:bg-gray-700">
@@ -106,15 +103,15 @@
             </div>
             @endforeach
 
-            <!-- Gráficos -->
+          <!-- Gráficos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-white mb-4">Vendas dos últimos 6 meses</h3>
-                    <div class="h-52 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-gray-500 dark:text-gray-400">(Gráfico de barras futuro)</div>
+                    <canvas id="chartVendasMes" class="w-full h-52"></canvas>
                 </div>
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
-                    <h3 class="text-lg font-semibold text-gray-700 dark:text-white mb-4">Distribuição por Tipo</h3>
-                    <div class="h-52 bg-gray-100 dark:bg-gray-700 rounded flex items-center justify-center text-gray-500 dark:text-gray-400">(Gráfico de pizza futuro)</div>
+                    <h3 class="text-lg font-semibold text-gray-700 dark:text-white mb-4">Faturamento x Pendências (últimos 6 meses)</h3>
+                    <canvas id="chartFaturamento" class="w-full h-52"></canvas>
                 </div>
             </div>
 
@@ -142,7 +139,6 @@
 
             <!-- Atalhos Rápidos -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                <a href="#" class="flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Novo Grupo</a>
                 <a href="{{ route('boleto.manage.form') }}" class="flex items-center justify-center bg-gradient-to-r from-green-500 to-green-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Registrar boleto</a>
                 <a href="{{ route('usuarios.index') }}" class="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Gerenciar Usuários</a>
                 <a href="{{ route('contratos.create') }}" class="flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Criar Contrato</a>
@@ -151,102 +147,60 @@
         </div>
     </div>
 
-    <script>
-        function openModal(id) {
-            document.getElementById(id).classList.remove('hidden');
-            switch (id) {
-                case 'modalCotas': fetchCotas(); break;
-                case 'modalContratos': fetchContratos(); break;
-                case 'modalFaturamento': fetchFaturamento(); break;
-                case 'modalPendentes': fetchPendentes(); break;
+   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ctxBar = document.getElementById('chartVendasMes').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode($graficoMeses) !!},
+                datasets: [{
+                    label: 'Cotas Vendidas',
+                    data: {!! json_encode($graficoValores) !!},
+                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
             }
-        }
-        function closeModal(id) {
-            document.getElementById(id).classList.add('hidden');
-        }
-        function handleBackdropClick(event, id) {
-            if (event.target.id === id) closeModal(id);
-        }
-
-        function populateTable(id, data, columns) {
-            const tbody = document.getElementById(id + 'Table');
-            tbody.innerHTML = '';
-            data.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.className = 'bg-white dark:bg-gray-800 border-b dark:border-gray-700';
-                columns.forEach(col => {
-                    const td = document.createElement('td');
-                    td.className = 'px-4 py-2';
-                    td.textContent = item[col] || '-';
-                    tr.appendChild(td);
-                });
-                tbody.appendChild(tr);
-            });
-        }
-
-        function fetchCotas() {
-            fetch('{{ route('dashboard.detalhes.cotas') }}')
-                .then(res => res.json())
-                .then(data => {
-                    data.sort((a, b) => {
-                        const da = new Date(a['Criado Em'].split('/').reverse().join('-'));
-                        const db = new Date(b['Criado Em'].split('/').reverse().join('-')); 
-                        if (da < db) return -1;
-                        if (da > db) return 1;
-                        return a['Cliente'].localeCompare(b['Cliente']);
-                    });
-                    populateTable('modalCotas', data, ['Cliente','Cotas','Criado Em']);
-                });
-        }
-        function fetchContratos() {
-            fetch('{{ route('dashboard.detalhes.contratos') }}')
-                .then(res => res.json())
-                .then(data => {
-                    data.sort((a, b) => {
-                        const da = new Date(a['Criado Em'].split('/').reverse().join('-'));
-                        const db = new Date(b['Criado Em'].split('/').reverse().join('-')); 
-                        if (da < db) return -1;
-                        if (da > db) return 1;
-                        return a['Cliente'].localeCompare(b['Cliente']);
-                    });
-                    populateTable('modalContratos', data, ['Cliente','Cotas','Criado Em']);
-                });
-        }
-        function fetchFaturamento() {
-            fetch('{{ route('dashboard.detalhes.faturamento') }}')
-                .then(res => res.json())
-                .then(data => {
-                    data.sort((a, b) => {
-                        const da = new Date(a['Vencimento'].split('/').reverse().join('-')); 
-                        const db = new Date(b['Vencimento'].split('/').reverse().join('-')); 
-                        if (da < db) return -1;
-                        if (da > db) return 1;
-                        return a['Cliente'].localeCompare(b['Cliente']);
-                    });
-                    populateTable('modalFaturamento', data, ['Cliente','Valor','Vencimento','Pago Em']);
-                });
-        }
-        function fetchPendentes() {
-            fetch('{{ route('dashboard.detalhes.pendentes') }}')
-                .then(res => res.json())
-                .then(data => {
-                    data.sort((a, b) => {
-                        const da = new Date(a['Vencimento'].split('/').reverse().join('-')); 
-                        const db = new Date(b['Vencimento'].split('/').reverse().join('-')); 
-                        if (da < db) return -1;
-                        if (da > db) return 1;
-                        return a['Cliente'].localeCompare(b['Cliente']);
-                    });
-                    populateTable('modalPendentes', data, ['Cliente','Valor','Vencimento']);
-                });
-        }
-
-        function exportData(modal, format) {
-            window.open(`/dashboard/detalhes/${modal}?export=${format}`, '_blank');
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.lucide) lucide.createIcons();
         });
-    </script>
+
+        const ctxBar2 = document.getElementById('chartFaturamento').getContext('2d');
+        new Chart(ctxBar2, {
+            type: 'bar',
+            data: {
+                labels: {!! json_encode($graficoFaturamentoLabels) !!},
+                datasets: [
+                    {
+                        label: 'Recebido',
+                        data: {!! json_encode($graficoFaturamentoPago) !!},
+                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                        borderRadius: 6
+                    },
+                    {
+                        label: 'Pendente',
+                        data: {!! json_encode($graficoFaturamentoPendente) !!},
+                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                        borderRadius: 6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true }
+                },
+                plugins: {
+                    legend: { position: 'bottom' }
+                }
+            }
+        });
+
+        if (window.lucide) lucide.createIcons();
+    });
+</script>
+
 </x-app-layout>

@@ -3,44 +3,46 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ActivityLoggerService; // ← Importando o serviço de log
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 
-
 class UsuarioController extends Controller
 {
+    // Registro de atividade para a listagem de usuários
+    public function index()
+    {
+        $usuarios = User::where('ativo', 1)->paginate(10);
 
-   // UsuarioController.php
+       
 
-public function index()
-{
-    // Em vez disso:
-    // $usuarios = User::where('ativo', 1)->get();
+        return view('usuarios.index', compact('usuarios'));
+    }
 
-    // Faça assim para usar paginação:
-    $usuarios = User::where('ativo', 1)->paginate(10);
-
-    return view('usuarios.index', compact('usuarios'));
-}
-
-
-
+    // Registro de atividade para o cadastro de usuário
     public function create()
     {
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Usuários',
+            'Abriu o formulário para cadastrar um novo usuário.'
+        );
+
         return view('usuarios.cadastrar');
     }
 
+    // Registro de atividade para armazenar um novo usuário
     public function store(Request $request)
     {
         // Validações
         $validated = $request->validate([
             'name'     => 'required|string|max:255',
             'email'    => 'required|email|unique:users,email',
-            'cpf'      => 'required|string|unique:users,cpf|size:11', // CPF com 11 caracteres numéricos
+            'cpf'      => 'required|string|unique:users,cpf|size:11',
             'telefone' => 'nullable|string|max:20',
-            'password' => 'required|string|min:6|confirmed', // Adicionado "confirmed"
+            'password' => 'required|string|min:6|confirmed',
             'role'     => 'required|in:admin,usuario',
         ], [
             'name.required'     => 'O nome é obrigatório.',
@@ -57,7 +59,7 @@ public function index()
         ]);
 
         // Criar o usuário no banco
-        User::create([
+        $user = User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'cpf'      => $validated['cpf'],
@@ -66,98 +68,137 @@ public function index()
             'role'     => $validated['role'],
         ]);
 
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Usuários',
+            'Criou um novo usuário com o nome ' . $user->name . ' e e-mail ' . $user->email
+        );
+
         return redirect()->route('usuarios.create')->with('success', 'Usuário cadastrado com sucesso!');
     }
 
-
+    // Registro de atividade para atualização de usuário
     public function update(Request $request, $id)
-{
-    try {
-        // Localiza o usuário
+    {
         $user = User::findOrFail($id);
 
         // Validação
-        $validatedData = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|string|email|max:255',
-            'telefone' => 'required|string|max:20',
-            // CPF não é alterado, pois está readonly
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $id,
+            'role' => 'required|in:cliente,admin',
         ]);
 
-        // Atualiza somente os campos validados
-        $user->update($validatedData);
+        // Atualiza os dados
+        $user->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'role' => $request->role,
+        ]);
 
-        // Redireciona de volta com mensagem de sucesso (flash message)
-        return redirect()->back()->with('success', 'Usuário atualizado com sucesso!');
-    } catch (\Exception $e) {
-        // Em caso de algum erro inesperado
-        return redirect()->back()->with('error', 'Ocorreu um erro ao atualizar o usuário.');
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Usuários',
+            'Atualizou o usuário com ID ' . $user->id . ' para o novo nome ' . $user->name
+        );
+
+        return redirect()->route('usuarios.index')->with('success', 'Usuário atualizado com sucesso!');
     }
-}
 
-
-
-
-
-
+    // Registro de atividade para deletar (desabilitar) usuário
     public function delete($id)
     {
-        // Carrega o usuário pelo ID
         $user = User::findOrFail($id);
 
         // Desabilita o usuário
         $user->ativo = 0;
         $user->save();
 
-        // Redireciona para a lista de usuários (ou para onde quiser)
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Usuários',
+            'Desabilitou o usuário com ID ' . $user->id . ' e e-mail ' . $user->email
+        );
+
         return redirect()
             ->route('usuarios.index')
             ->with('success', 'Usuário desabilitado com sucesso!');
     }
 
-
+    // Registro de atividade para login
     public function loginForm()
     {
-        return view('auth.login'); // Criaremos essa view
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Autenticação',
+            'Abriu a página de login.'
+        );
+
+        return view('auth.login');
     }
 
+    // Registro de atividade para autenticar login
     public function authenticate(Request $request)
-{
-    $credentials = $request->validate([
-        'email'    => 'required|email',
-        'password' => 'required|string|min:6',
-    ]);
+    {
+        $credentials = $request->validate([
+            'email'    => 'required|email',
+            'password' => 'required|string|min:6',
+        ]);
 
-    if (Auth::attempt($credentials)) {
-        $request->session()->regenerate();
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
 
-        if (auth()->user()->role === 'admin') {
-            return redirect()->route('dashboard')
-                ->with('success', 'Login realizado com sucesso!');
-        } else {
-            return redirect()->route('Inicio')
-                ->with('success', 'Login realizado com sucesso!');
+            // Log de atividade
+            ActivityLoggerService::registrar(
+                'Autenticação',
+                'Usuário ' . Auth::user()->name . ' fez login com sucesso.'
+            );
+
+            if (auth()->user()->role === 'admin') {
+                return redirect()->route('dashboard')
+                    ->with('success', 'Login realizado com sucesso!');
+            } else {
+                return redirect()->route('Inicio')
+                    ->with('success', 'Login realizado com sucesso!');
+            }
         }
+
+        // Log de atividade em caso de falha no login
+        ActivityLoggerService::registrar(
+            'Autenticação',
+            'Falha na tentativa de login com o e-mail ' . $request->email
+        );
+
+        return back()->withErrors([
+            'email' => 'As credenciais fornecidas não correspondem aos nossos registros.',
+        ])->onlyInput('email');
     }
 
-    return back()->withErrors([
-        'email' => 'As credenciais fornecidas não correspondem aos nossos registros.',
-    ])->onlyInput('email');
-}
-
-
+    // Registro de atividade para logout
     public function logout(Request $request)
     {
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Autenticação',
+            'Usuário ' . Auth::user()->name . ' fez logout com sucesso.'
+        );
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect()->route('login')->with('success', 'Você saiu com sucesso!');
     }
 
-
+    // Registro de atividade para mostrar a página inicial do cliente
     public function ShowInicio()
     {
-        
+        // Log de atividade
+        ActivityLoggerService::registrar(
+            'Clientes',
+            'Abriu a área do cliente.'
+        );
+
         return view('cliente.area');
     }
 }

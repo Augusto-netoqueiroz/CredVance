@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Password;
 use App\Mail\VerificationMail;
 use App\Mail\FinalizeRegistrationMail;
+use App\Services\ActivityLoggerService;
 
 
 class LandingRegisterController extends Controller
@@ -288,7 +289,6 @@ class LandingRegisterController extends Controller
 
 public function storeBasicUser(Request $request)
 {
-    // Valida dados etc...
     $request->validate([
         'name'     => 'required|max:255',
         'email'    => 'required|email|unique:users,email',
@@ -315,24 +315,22 @@ public function storeBasicUser(Request $request)
     );
 
     try {
-        // Envie o e-mail com o link
         Mail::to($user->email)->send(new FinalizeRegistrationMail($finishLink));
 
-        // Se chegar até aqui, deu tudo certo.
-        return response()->json([
-            'message' => 'Usuário criado com sucesso e link de finalização enviado!'
-        ]);
+          // Log da atividade
+        ActivityLoggerService::registrar(
+            'Usuários',
+            'Criou um novo usuário com ID ' . $user->id . ' e nome ' . $user->name
+        );
 
+        return redirect()->back()->with('success', 'Usuário criado com sucesso e link de finalização enviado!');
     } catch (\Exception $e) {
-        // Captura a exceção real do envio de email
         \Log::error('Erro ao enviar e-mail: ' . $e->getMessage());
 
-        // Retorna 500 + a mensagem de erro (opcional)
-        return response()->json([
-            'message' => 'Usuário criado, mas ocorreu falha ao enviar e-mail: ' . $e->getMessage()
-        ], 500);
+        return redirect()->back()->with('error', 'Usuário criado, mas ocorreu falha ao enviar e-mail: ' . $e->getMessage());
     }
 }
+
 
 public function finishRegister(Request $request)
 {

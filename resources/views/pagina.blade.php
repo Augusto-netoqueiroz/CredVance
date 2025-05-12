@@ -63,7 +63,7 @@
 
     <!-- ======= Hero Section (Fundo escuro) ======= -->
     <section id="hero" class="hero section dark-background">
-      <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in">
+   <!--   <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in"> -->
       <div class="container d-flex flex-column align-items-center">
         <h2 data-aos="fade-up" data-aos-delay="100">Seu Consórcio Começa Aqui</h2>
         <p data-aos="fade-up" data-aos-delay="200">
@@ -221,25 +221,27 @@
                 <div class="info-item d-flex flex-column justify-content-center align-items-center">
                   <i class="bi bi-geo-alt"></i>
                   <h3>Endereço</h3>
-                  <p>R. Exemplo, 123 - São Paulo/SP</p>
+                  <p>Rua 35 Casa 101 Setor Tradicional - São Sebastião DF</p>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="info-item d-flex flex-column justify-content-center align-items-center">
                   <i class="bi bi-telephone"></i>
                   <h3>Telefone</h3>
-                  <p>+55 11 99999-9999</p>
+                  <p>+55 61 99625-8003</p>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="info-item d-flex flex-column justify-content-center align-items-center">
                   <i class="bi bi-envelope"></i>
                   <h3>Email</h3>
-                  <p>contato@credvance.com.br</p>
+                  <p>contato@meucredvance.com.br</p>
                 </div>
               </div>
             </div>
           </div>
+
+          <!--
           <div class="col-lg-6">
             <form action="forms/contact.php" method="post" class="php-email-form">
               <div class="row gy-4">
@@ -267,9 +269,11 @@
         </div>
       </div>
     </section>
-    <!-- End Contato Section -->
-
-  </main>
+      -->
+  
+  
+  
+    </main>
 
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer dark-background">
@@ -280,8 +284,8 @@
             <span class="sitename">Cred Vance</span>
           </a>
           <div class="footer-contact pt-3">
-            <p>R. Exemplo, 123<br>São Paulo/SP</p>
-            <p><strong>Telefone:</strong> +55 11 99999-9999</p>
+            <p>Rua 35 Casa 101 Setor Tradicional<br>São Sebastião DF</p>
+            <p><strong>Telefone:</strong> +55 61 99625-8003</p>
             <p><strong>Email:</strong> contato@credvance.com.br</p>
           </div>
           <div class="social-links d-flex mt-4">
@@ -303,6 +307,7 @@
           </ul>
         </div>
 
+        <!--
         <div class="col-lg-6 col-md-12 footer-newsletter">
           <h4>Newsletter</h4>
           <p>Receba nossas novidades e ofertas exclusivas no seu email!</p>
@@ -317,6 +322,7 @@
         </div>
       </div>
     </div>
+-->
 
     <div class="container copyright text-center mt-4">
       <p>&copy; Copyright 

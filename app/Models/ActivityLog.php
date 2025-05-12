@@ -15,4 +15,8 @@ class ActivityLog extends Model
         'modulo',
         'descricao',
     ];
+
+    protected $casts = [
+        'data' => 'datetime', // ✅ Isso converte automaticamente em objeto Carbon
+    ];
 }

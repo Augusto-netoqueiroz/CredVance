@@ -20,6 +20,7 @@ use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\BoletoController;
+use App\Http\Controllers\ActivityLogController;
  
 
 
@@ -83,8 +84,10 @@ Route::post('/login', [UsuarioController::class, 'authenticate'])->name('login.a
 
 
 
-
-
+Route::middleware('auth')->group(function () {
+     Route::get('/activity-logs', [ActivityLogController::class, 'index'])
+          ->name('activity_logs.index');
+});
 
 
 Route::middleware('auth')->group(function () {
@@ -102,7 +105,7 @@ Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.ind
 Route::get('/usuarios/cadastrar', [UsuarioController::class, 'create'])->name('usuarios.create');
 Route::post('/cadastrar/salvar', [UsuarioController::class, 'store'])->name('usuarios.store');
 Route::post('/usuarios/{id}/delete', [UsuarioController::class, 'delete'])->name('usuarios.delete');
-Route::patch('/usuario/{id}', [UsuarioController::class, 'update'])->name('usuario.update');
+Route::put('/usuario/editar/{id}', [UsuarioController::class, 'update'])->name('usuario.update');
 });
 
 

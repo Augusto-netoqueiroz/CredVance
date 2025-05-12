@@ -192,8 +192,8 @@
             <span class="sitename">Cred Vance</span>
           </a>
           <div class="footer-contact pt-3">
-            <p>R. Exemplo, 123<br>São Paulo/SP</p>
-            <p class="mt-3"><strong>Telefone:</strong> +55 11 99999-9999</p>
+            <p>Rua 35 Casa 101 Setor Tradicional<br>São Sebastião DF</p>
+            <p class="mt-3"><strong>Telefone:</strong> +55 61 99625-8003</p>
             <p><strong>Email:</strong> contato@credvance.com.br</p>
           </div>
           <div class="social-links d-flex mt-4">
@@ -213,30 +213,12 @@
             <li><i class="bi bi-chevron-right"></i> <a href="index.html#contact">Contato</a></li>
           </ul>
         </div>
-        <div class="col-lg-6 col-md-12 footer-newsletter">
-          <h4>Newsletter</h4>
-          <p>Receba nossas novidades e ofertas exclusivas diretamente no seu email!</p>
-          <form action="forms/newsletter.php" method="post" class="php-email-form">
-            <div class="newsletter-form">
-              <input type="email" name="email" placeholder="Seu email">
-              <input type="submit" value="Assinar">
-            </div>
-            <div class="loading">Enviando...</div>
-            <div class="error-message"></div>
-            <div class="sent-message">Sua inscrição foi realizada com sucesso!</div>
-          </form>
-        </div>
-      </div>
-    </div>
+      
     <div class="container copyright text-center mt-4">
-      <p>
-        &copy; <strong class="px-1 sitename">Cred Vance</strong>
+      <p>&copy; Copyright 
+        <strong class="px-1 sitename">Cred Vance</strong>. 
         Todos os direitos reservados.
       </p>
-      <div class="credits">
-        Designed by <a href="https://bootstrapmade.com/">BootstrapMade</a>
-        Distributed by <a href="https://themewagon.com">ThemeWagon</a>
-      </div>
     </div>
   </footer>
   <!-- End Footer -->

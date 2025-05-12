@@ -88,34 +88,34 @@
                                 @endif
                             </td>
                             <td class="px-4 py-2 flex flex-wrap gap-2">
-                                {{-- Botão: Enviar Boleto (só se ainda não tiver boleto) --}}
-                                @if(!$pag->boleto)
-                                    <button type="button" onclick="openUploadModal({{ $pag->id }})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs w-32" title="Enviar Boleto">
-                                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-                                    </button>
-                                @endif
+                            {{-- Botão: Enviar Boleto (só se ainda não tiver boleto) --}}
+                            @if(!$pag->boleto)
+                                <button type="button" onclick="openUploadModal({{ $pag->id }})" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-xs w-32" title="Enviar Boleto">
+                                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                </button>
+                            @endif
 
-                                {{-- Botão: Baixar Boleto --}}
-                                @if($pag->boleto)
-                                    <a href="{{ route('boleto.download', $pag) }}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs w-32 flex items-center justify-center" title="Baixar Boleto">
-                                        <i data-lucide="file-text" class="w-4 h-4"></i>
-                                    </a>
-                                @endif
+                            {{-- Botão: Baixar Boleto --}}
+                            @if($pag->boleto)
+                                <a href="{{ route('boleto.download', $pag) }}" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-xs w-32 flex items-center justify-center" title="Baixar Boleto">
+                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                </a>
+                            @endif
 
-                                {{-- Botão: Baixar Comprovante --}}
-                                @if($pag->comprovante && Storage::disk('local')->exists($pag->comprovante))
-                                    <a href="{{ route('boleto.comprovante.download', $pag->id) }}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-xs w-32 flex items-center justify-center" title="Baixar Comprovante">
-                                        <i data-lucide="image" class="w-4 h-4"></i>
-                                    </a>
-                                @endif
+                            {{-- Botão: Baixar Comprovante --}}
+                            @if($pag->comprovante && Storage::disk('local')->exists($pag->comprovante))
+                                <a href="{{ route('boleto.comprovante.download', $pag->id) }}" class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded text-xs w-32 flex items-center justify-center" title="Baixar Comprovante">
+                                    <i data-lucide="image" class="w-4 h-4"></i>
+                                </a>
+                            @endif
 
-                                {{-- Botão: Marcar como Pago (só se o status não for "pago") --}}
-                                @if($pag->status !== 'pago')
-                                    <button type="button" onclick="openStatusModal({{ $pag->id }})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs w-32" title="Marcar como Pago">
-                                        <i data-lucide="check-circle" class="w-4 h-4"></i>
-                                    </button>
-                                @endif
-                            </td>
+                            {{-- Botão: Marcar como Pago (só se o status não for "pago") --}}
+                            @if($pag->status !== 'pago')
+                                <button type="button" onclick="openStatusModal({{ $pag->id }})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded text-xs w-32" title="Marcar como Pago">
+                                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                                </button>
+                            @endif
+                        </td>
 
                         </tr>
                         @endforeach

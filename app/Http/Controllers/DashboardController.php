@@ -12,37 +12,73 @@ use PDF;
 
 class DashboardController extends Controller
 {
-    public function index()
+     public function index()
     {
-        // Permite acesso apenas para administradores
         if (auth()->user()->role !== 'admin') {
             abort(403, 'Acesso negado.');
         }
 
-        // Soma total de cotas vendidas
+        // Indicadores principais
         $cotasVendidas = Contrato::sum('quantidade_cotas');
-
-        // Quantidade de contratos ativos
         $contratosCount = Contrato::where('status', 'ativo')->count();
-
-        // Faturamento do mês baseado na data de VENCIMENTO dos pagamentos
         $faturamentoMes = Pagamento::where('status', 'pago')
             ->whereMonth('vencimento', now()->month)
-            ->whereYear('vencimento',  now()->year)
+            ->whereYear('vencimento', now()->year)
             ->sum('valor');
-
-        // Pagamentos pendentes: quantidade e valor total
         $pendentesCount = Pagamento::where('status', 'pendente')->count();
         $pendentesValor = Pagamento::where('status', 'pendente')->sum('valor');
+
+        // Gráfico de Vendas dos últimos 6 meses
+        $graficoMeses = [];
+        $graficoValores = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $data = now()->subMonths($i);
+            $label = $data->format('M/Y');
+            $somaCotas = Contrato::whereYear('created_at', $data->year)
+                ->whereMonth('created_at', $data->month)
+                ->sum('quantidade_cotas');
+            $graficoMeses[] = $label;
+            $graficoValores[] = $somaCotas;
+        }
+
+        // Gráfico de Faturamento x Pendências (últimos 6 meses)
+        $graficoFaturamentoLabels = [];
+        $graficoFaturamentoPago = [];
+        $graficoFaturamentoPendente = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $data = now()->subMonths($i);
+            $mesLabel = $data->format('M/Y');
+
+            $pago = Pagamento::whereMonth('vencimento', $data->month)
+                ->whereYear('vencimento', $data->year)
+                ->where('status', 'pago')
+                ->sum('valor');
+
+            $pendente = Pagamento::whereMonth('vencimento', $data->month)
+                ->whereYear('vencimento', $data->year)
+                ->where('status', 'pendente')
+                ->sum('valor');
+
+            $graficoFaturamentoLabels[] = $mesLabel;
+            $graficoFaturamentoPago[] = round($pago, 2);
+            $graficoFaturamentoPendente[] = round($pendente, 2);
+        }
 
         return view('dashboard', compact(
             'cotasVendidas',
             'contratosCount',
             'faturamentoMes',
             'pendentesCount',
-            'pendentesValor'
+            'pendentesValor',
+            'graficoMeses',
+            'graficoValores',
+            'graficoFaturamentoLabels',
+            'graficoFaturamentoPago',
+            'graficoFaturamentoPendente'
         ));
     }
+
+    // (os métodos detalhesCotas, detalhesContratos, detalhesFaturamento, detalhesPendentes seguem abaixo como já estão no seu código atual)
 
     public function detalhesCotas(Request $request)
     {

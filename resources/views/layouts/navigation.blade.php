@@ -25,6 +25,9 @@
                         <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
                             {{ __('Usuários') }}
                         </x-nav-link>
+                         <x-nav-link :href="route('activity_logs.index')" :active="request()->routeIs('activity_logs.index')">
+                            {{ __('Logs') }}
+                        </x-nav-link>
                     @endif
                 </div>
             </div>
