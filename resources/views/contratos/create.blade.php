@@ -36,7 +36,14 @@
           <label for="consorcio_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Plano de Cota</label>
           <select name="consorcio_id" id="consorcio_id" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
             @foreach($consorcios as $cons)
-              <option value="{{ $cons->id }}">{{ $cons->plano }} — {{ $cons->prazo }} meses</option>
+              <option value="{{ $cons->id }}"
+                      data-prazo="{{ $cons->prazo }}"
+                      data-valor-total="{{ $cons->valor_total }}"
+                      data-parcela-mensal="{{ $cons->parcela_mensal }}"
+                      data-juros="{{ $cons->juros }}"
+                      data-valor-final="{{ $cons->valor_final }}">
+                {{ $cons->plano }} — {{ $cons->prazo }} meses
+              </option>
             @endforeach
           </select>
         </div>
@@ -120,78 +127,83 @@
 
       if (isAdmin) {
         const cliente = document.querySelector('#cliente_id option:checked');
-        nome = cliente.dataset.nome;
-        email = cliente.dataset.email;
-        cpf = cliente.dataset.cpf;
+        nome     = cliente.dataset.nome;
+        email    = cliente.dataset.email;
+        cpf      = cliente.dataset.cpf;
         telefone = cliente.dataset.telefone;
       } else {
         const dados = document.getElementById('cliente_dados');
-        nome = dados.dataset.nome;
-        email = dados.dataset.email;
-        cpf = dados.dataset.cpf;
+        nome     = dados.dataset.nome;
+        email    = dados.dataset.email;
+        cpf      = dados.dataset.cpf;
         telefone = dados.dataset.telefone;
       }
 
-      const plano = document.querySelector('#consorcio_id option:checked')?.textContent || '';
-      const qtdCotas = parseInt(document.querySelector('#quantidade_cotas').value);
+      const opt     = document.querySelector('#consorcio_id option:checked');
+      const prazo   = parseInt(opt.dataset.prazo, 10);
+      const vTotal  = parseFloat(opt.dataset.valorTotal);
+      const vInicio = parseFloat(opt.dataset.parcelaMensal);
+      const juros   = parseFloat(opt.dataset.juros);
+      const vFinal  = parseFloat(opt.dataset.valorFinal);
+      const qtd     = parseInt(document.getElementById('quantidade_cotas').value, 10);
 
-      const valorParcelaInicial = 155.00;
-      const valorParcelaFinal = 100.00;
-      const parcelasPorCota = 12;
-      const totalPorCota = 1530.00;
-      const retornoPorCota = 1860.00;
-      const valorTotal = totalPorCota * qtdCotas;
-      const retornoTotal = retornoPorCota * qtdCotas;
-      const vencimentoPrimeiraParcela = '10/06/2025';
+      let vals = [];
+      if (prazo === 12) {
+        let v = vInicio;
+        for (let i = 0; i < 12; i++) {
+          vals.push(Math.max(v, 100));
+          v = Math.max(v - 5, 100);
+        }
+      } else if (prazo === 24) {
+        let v = vInicio;
+        for (let i = 0; i < 24; i++) {
+          vals.push(Math.max(v, 100));
+          if ((i + 1) % 2 === 0) v = Math.max(v - 5, 100);
+        }
+      } else {
+        const base = +(vTotal / prazo).toFixed(2);
+        for (let i = 0; i < prazo; i++) vals.push(base);
+      }
 
-      const contrato = `
+      const totalPago   = vals.reduce((a,b) => a + b, 0) * qtd;
+      const retorno     = vFinal * qtd;
+      const primeiraPar = (vals[0] * qtd).toFixed(2);
+      const ultimaPar   = (vals[vals.length - 1] * qtd).toFixed(2);
+      const venc        = new Date();
+      venc.setMonth(venc.getMonth() + 1);
+      const dia = String(venc.getDate()).padStart(2,'0');
+      const mes = String(venc.getMonth()+1).padStart(2,'0');
+      const ano = venc.getFullYear();
+
+      const contratoHTML = `
         <div>
           <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
-          
           <div class="mb-3">
             <p class="text-xs"><span class="font-medium">Nome:</span> ${nome}</p>
             <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf}</p>
             <p class="text-xs"><span class="font-medium">E-mail:</span> ${email}</p>
-            <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${plano}</p>
-            <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtdCotas}</p>
+            <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${opt.textContent.trim()}</p>
+            <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtd}</p>
           </div>
-          
-          <div class="mb-3">
-            <p class="text-xs font-medium mb-1">Termos do Contrato:</p>
-            <ul class="list-disc pl-4 text-xs space-y-0">
-              Efetuar os pagamentos das parcelas conforme estipulado;
-               Respeitar os critérios de contemplação; 
-               Manter dados atualizados; 
-               Entender os riscos da inadimplência. 
-            </ul>
-          </div>
-          
           <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
             <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
             <div class="grid grid-cols-2 gap-1 text-xs">
               <p><span class="font-medium">1ª parcela:</span></p>
-              <p class="text-right">R$ ${(valorParcelaInicial * qtdCotas).toFixed(2)}</p>
-              
+              <p class="text-right">R$ ${primeiraPar}</p>
               <p><span class="font-medium">Última parcela:</span></p>
-              <p class="text-right">R$ ${(valorParcelaFinal * qtdCotas).toFixed(2)}</p>
-              
-              <p><span class="font-medium">Total:</span></p>
-              <p class="text-right">R$ ${valorTotal.toFixed(2)}</p>
-              
-              <p><span class="font-medium">Retorno:</span></p>
-              <p class="text-right">R$ ${retornoTotal.toFixed(2)}</p>
-              
-              <p><span class="font-medium">Vencimento da 1ª:</span></p>
-              <p class="text-right">${vencimentoPrimeiraParcela}</p>
+              <p class="text-right">R$ ${ultimaPar}</p>
+              <p><span class="font-medium">Total a pagar:</span></p>
+              <p class="text-right">R$ ${totalPago.toFixed(2)}</p>
+              <p><span class="font-medium">Valor final (com ${juros}%):</span></p>
+              <p class="text-right">R$ ${retorno.toFixed(2)}</p>
+              <p><span class="font-medium">Vencimento 1ª parcela:</span></p>
+              <p class="text-right">${dia}/${mes}/${ano}</p>
             </div>
           </div>
-          
-          <p class="text-xs font-medium text-center">
-            Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.
-          </p>
+          <p class="text-xs font-medium text-center">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
         </div>`;
 
-      document.getElementById('conteudoContrato').innerHTML = contrato;
+      document.getElementById('conteudoContrato').innerHTML = contratoHTML;
       document.getElementById('modalContrato').classList.remove('hidden');
     }
 
@@ -211,8 +223,8 @@
 
     async function confirmarContrato() {
       const cpfDigitado = document.getElementById('cpf_confirm').value.trim();
-      const senha = document.getElementById('senha_confirm_input').value.trim();
-      const cpfReal = "{{ Auth::user()->cpf }}";
+      const senha       = document.getElementById('senha_confirm_input').value.trim();
+      const cpfReal     = "{{ Auth::user()->cpf }}";
 
       if (cpfDigitado !== cpfReal) return exibirMiniModalErro("CPF incorreto.", 'cpf_confirm');
       if (!senha || senha.length < 4) return exibirMiniModalErro("Senha inválida.", 'senha_confirm_input');
@@ -229,14 +241,14 @@
         return exibirMiniModalErro("Erro na validação da senha.");
       }
 
-      document.getElementById('navegador_info').value = navigator.userAgent;
-      document.getElementById('resolucao_tela').value = `${screen.width}x${screen.height}`;
-      document.getElementById('data_aceite').value = new Date().toISOString();
+      document.getElementById('navegador_info').value   = navigator.userAgent;
+      document.getElementById('resolucao_tela').value  = `${screen.width}x${screen.height}`;
+      document.getElementById('data_aceite').value     = new Date().toISOString();
       document.getElementById('senha_confirm_hidden').value = senha;
 
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
-          document.getElementById('latitude').value = pos.coords.latitude;
+          document.getElementById('latitude').value  = pos.coords.latitude;
           document.getElementById('longitude').value = pos.coords.longitude;
           fecharModalContrato();
           document.getElementById('formContrato').submit();

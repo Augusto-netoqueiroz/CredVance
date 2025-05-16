@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use App\Exports\GenericExport;
 use Maatwebsite\Excel\Facades\Excel;
 use PDF;
+use App\Services\ActivityLoggerService;
 
 class DashboardController extends Controller
 {
@@ -17,6 +18,11 @@ class DashboardController extends Controller
         if (auth()->user()->role !== 'admin') {
             abort(403, 'Acesso negado.');
         }
+
+          ActivityLoggerService::registrar(
+            'Dashboard',
+            'Abriu a página de Dashboard.'
+        );
 
         // Indicadores principais
         $cotasVendidas = Contrato::sum('quantidade_cotas');

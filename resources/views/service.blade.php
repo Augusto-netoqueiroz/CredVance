@@ -243,30 +243,30 @@
 
   <!-- Script de Cálculo de Parcelas -->
   <script>
-    function calcularParcela() {
-      const q = parseInt(document.getElementById('quantidadeCotas').value) || 1;
-      const a1 = 155, an = 100, n = 12;
-      const step = (a1 - an) / (n - 1);
-      let totalPago = 0;
-      let html = `<h5 class="small">Simulação de Parcelas</h5>
-                  <table class="table table-sm">
-                    <thead>
-                      <tr><th>Mês</th><th>Por Cota (R$)</th><th>Total (R$)</th></tr>
-                    </thead><tbody>`;
-      for (let i = 1; i <= n; i++) {
-        const valorPorCota = a1 - (i - 1) * step;
-        const valorTotal   = valorPorCota * q;
-        totalPago += valorTotal;
-        html += `<tr><td>${i}</td><td>${valorPorCota.toFixed(2)}</td><td>${valorTotal.toFixed(2)}</td></tr>`;
-      }
-      html += `</tbody></table>`;
-      const retornoFinal = a1 * n * q;
-      html += `<p class="small"><strong>Total Pago:</strong> R$ ${totalPago.toFixed(2)}</p>`;
-      html += `<p class="small"><strong>Retorno Final:</strong> R$ ${retornoFinal.toFixed(2)}</p>`;
-      const res = document.getElementById('resultadoSimulacao');
-      res.innerHTML = html;
-      res.style.display = 'block';
-    }
+   function calcularParcela() {
+  const q = parseInt(document.getElementById('quantidadeCotas').value) || 1;
+  const a1 = 155, an = 100, n = 12;
+  const step = (a1 - an) / (n - 1);
+  let totalPago = 0;
+  let html = `<h5 class="small">Simulação de Parcelas</h5>
+              <table class="table table-sm">
+                <thead>
+                  <tr><th>Mês</th><th>Por Cota (R$)</th><th>Total (R$)</th></tr>
+                </thead><tbody>`;
+  for (let i = 1; i <= n; i++) {
+    const valorPorCota = a1 - (i - 1) * step;
+    const valorTotal   = valorPorCota * q;
+    totalPago += valorTotal;
+    html += `<tr><td>${i}</td><td>${valorPorCota.toFixed(2).replace('.', ',')}</td><td>${valorTotal.toFixed(2).replace('.', ',')}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  const retornoFinal = a1 * n * q;
+  html += `<p class="small"><strong>Total Pago:</strong> R$ ${totalPago.toFixed(2).replace('.', ',')}</p>`;
+  html += `<p class="small"><strong>Retorno Final:</strong> R$ ${retornoFinal.toFixed(2).replace('.', ',')}</p>`;
+  const res = document.getElementById('resultadoSimulacao');
+  res.innerHTML = html;
+  res.style.display = 'block';
+}
   </script>
 
   <!-- Script para iniciar AOS e remover o preloader -->

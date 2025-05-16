@@ -16,7 +16,10 @@ class UsuarioController extends Controller
     {
         $usuarios = User::where('ativo', 1)->paginate(10);
 
-       
+         ActivityLoggerService::registrar(
+            'Usuário',
+            'Abriu a página de Usuários.'
+        );
 
         return view('usuarios.index', compact('usuarios'));
     }
@@ -128,11 +131,8 @@ class UsuarioController extends Controller
     // Registro de atividade para login
     public function loginForm()
     {
-        // Log de atividade
-        ActivityLoggerService::registrar(
-            'Autenticação',
-            'Abriu a página de login.'
-        );
+        
+      
 
         return view('auth.login');
     }

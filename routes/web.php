@@ -10,7 +10,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
 use App\Http\Controllers\Auth\EmailVerificationPromptController;
-use App\Http\Controllers\Auth\NewPasswordController;
+ 
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
@@ -21,6 +21,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\BoletoController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\NewPasswordController;
  
 
 
@@ -180,17 +181,22 @@ Route::post('/forgot-password', [LandingRegisterController::class, 'sendResetPas
     Route::post('/forgot-password-auth', [LandingRegisterController::class, 'sendResetPasswordLinkCustomSameView'])
     ->name('password.email.auth'); // Mantém o mesmo nome se o template usar essa rota
 
-// Rota para o link de reset (usado no e-mail)
-Route::get('/reset-password', [LandingRegisterController::class, 'showResetPasswordFormCustom'])
-    ->middleware('guest')
+ 
+// Rotas públicas de reset de senha (fora de qualquer grupo 'guest'):
+Route::get('/reset-password', 
+    [NewPasswordController::class, 'showResetPasswordFormCustom'])
+    ->middleware('signed')
     ->name('landing.reset');
 
-
-
-// Rota para processar a nova senha
-Route::post('/reset-password', [LandingRegisterController::class, 'resetPasswordCustom'])
+Route::post('/reset-password',
+    [NewPasswordController::class, 'resetPasswordCustom'])
     ->middleware('guest')
     ->name('password.update.custom');
+
+// Rota para processar a nova senha
+//Route::post('/reset-password', [LandingRegisterController::class, 'resetPasswordCustom'])
+   // ->middleware('guest')
+//->name('password.update.custom');
 
 
     Route::post('/landing/reset-password/update', [LandingRegisterController::class, 'updateResetPassword'])
@@ -223,19 +229,21 @@ Route::post('/reset-password', [LandingRegisterController::class, 'resetPassword
 
 
 
-Route::get('/reset-password', [LandingRegisterController::class, 'showForgotPasswordForm'])
-    ->middleware('guest')
-    ->name('password.reset'); 
+//Route::get('/reset-password', [LandingRegisterController::class, 'showForgotPasswordForm'])
+  //  ->middleware('guest')
+    //->name('password.reset'); 
 
-// Rota para o link de reset (usado no e-mail)
-Route::get('/reset-password', [LandingRegisterController::class, 'showResetPasswordFormCustom'])
-    ->middleware('guest')
-    ->name('landing.reset');
+// Rota do link de reset (gerado por URL::temporarySignedRoute)
+//Route::get('/reset-password', 
+//    [LandingRegisterController::class, 'showResetPasswordFormCustom'])
+//    ->middleware('signed')
+//    ->name('landing.reset');
+
 
     // Rota para processar a nova senha
-Route::post('/reset-password', [LandingRegisterController::class, 'resetPasswordCustom'])
-->middleware('guest')
-->name('password.update.custom');
+//Route::post('/reset-password', [LandingRegisterController::class, 'resetPasswordCustom'])
+//->middleware('guest')
+//->name('password.update.custom');
 
 
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
