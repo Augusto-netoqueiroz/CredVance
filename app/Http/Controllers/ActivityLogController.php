@@ -13,10 +13,11 @@ class ActivityLogController extends Controller
      */
     public function index(Request $request)
     {
-        // Para debug, descomente esta linha e acesse a rota para ver se chega aqui:
-        // dd('Entrou em ActivityLogController@index');
-
-        // Pega os logs mais recentes, paginando de 15 em 15
+        if (auth()->user()->role !== 'admin') {
+        return redirect()
+            ->route('Inicio')
+            ->with('error', 'Você não tem permissão para acessar essa página');
+    }
         $logs = ActivityLog::orderBy('data', 'desc')->paginate(15);
 
         return view('activity_logs.index', compact('logs'));

@@ -5,20 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Contrato;
 use App\Models\Consorcio;
 use App\Models\User;
-use App\Services\PagamentoGenerator;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
-use App\Services\ActivityLoggerService; // ← AQUI
+use App\Services\ActivityLoggerService;
 
 class ContratoController extends Controller
 {
     public function create()
     {
-        $clientes = User::where('role', 'cliente')->orderBy('name')->get();
+        $clientes   = User::where('role', 'cliente')->orderBy('name')->get();
         $consorcios = Consorcio::all();
 
         return view('contratos.create', compact('clientes','consorcios'));
@@ -30,6 +29,8 @@ class ContratoController extends Controller
             'cliente_id'       => 'required|exists:users,id',
             'consorcio_id'     => 'required|exists:consorcios,id',
             'quantidade_cotas' => 'required|integer|min:1',
+            // permitir até dia 31
+            'dia_vencimento'   => 'required|integer|min:1|max:31',
             'senha_confirm'    => 'required',
             'navegador_info'   => 'required',
             'resolucao_tela'   => 'required',
@@ -56,7 +57,9 @@ class ContratoController extends Controller
 
         \Log::info('Contrato criado com sucesso', ['contrato_id' => $contrato->id]);
 
-        $this->gerarPagamentos($contrato);
+        // pega o dia escolhido para vencimento das parcelas
+        $diaVencimento = (int) $request->dia_vencimento;
+        $this->gerarPagamentos($contrato, $diaVencimento);
 
         try {
             \Log::info('Iniciando geração do PDF', ['contrato_id' => $contrato->id]);
@@ -75,7 +78,6 @@ class ContratoController extends Controller
 
             \Log::info('PDF gerado e salvo com sucesso', ['path' => $path]);
 
-            // LOG DE ATIVIDADE ← AQUI
             ActivityLoggerService::registrar(
                 'Contratos',
                 'Criou contrato para o cliente ID ' . $contrato->cliente_id . ' com ' . $contrato->quantidade_cotas . ' cotas.'
@@ -92,59 +94,64 @@ class ContratoController extends Controller
         return redirect()->route('Inicio')->with('success', 'Contrato Criado !! Bem vindo a Credvance.');
     }
 
-    public function gerarPagamentos(Contrato $contrato): void
+    /**
+     * Gera pagamentos: 1ª no dia do contrato, demais no dia escolhido
+     */
+    public function gerarPagamentos(Contrato $contrato, int $diaVencimento): void
     {
-        $qtdCotas    = $contrato->quantidade_cotas;
-        $inicio      = now()->startOfMonth();
-        $pagamentos  = [];
+        $qtdCotas = $contrato->quantidade_cotas;
+        $consorcio = $contrato->consorcio;
+        $prazo     = $consorcio->prazo;
+        $valorTotalPlano     = $consorcio->valor_total;
+        $taxaJuros           = $consorcio->juros;
+        $valorFinalPlano     = $consorcio->valor_final;
+        $valorInicialParcela = $consorcio->parcela_mensal;
 
-        // busca dados do plano em Consorcio
-        $consorcio            = $contrato->consorcio;
-        $prazo                = $consorcio->prazo;
-        $valorTotalPlano      = $consorcio->valor_total;
-        $taxaJuros            = $consorcio->juros;
-        $valorFinalPlano      = $consorcio->valor_final;
-        $valorInicialParcela  = $consorcio->parcela_mensal;
-
+        // monta array de valores das parcelas
         $parcelasArray = [];
-
-        // se existir relacionamento consorcio->parcelas, usa esses valores
         if (method_exists($consorcio, 'parcelas') && $consorcio->parcelas()->count()) {
             foreach ($consorcio->parcelas as $p) {
                 $parcelasArray[] = $p->valor_parcela;
             }
-        }
-        // plano de 12 meses: decrescente de valor inicial até limite mínimo
-        elseif ($prazo === 12) {
-            $valor = $valorInicialParcela;
+        } elseif ($prazo === 12) {
+            $v = $valorInicialParcela;
             for ($i = 0; $i < 12; $i++) {
-                $parcelasArray[] = max($valor, 100);
-                $valor = max($valor - 5, 100);
+                $parcelasArray[] = max($v, 100);
+                $v = max($v - 5, 100);
             }
-        }
-        // plano de 24 meses: decrescente em pares
-        elseif ($prazo === 24) {
-            $valor = $valorInicialParcela;
+        } elseif ($prazo === 24) {
+            $v = $valorInicialParcela;
             for ($i = 0; $i < 24; $i++) {
-                $parcelasArray[] = max($valor, 100);
+                $parcelasArray[] = max($v, 100);
                 if (($i + 1) % 2 === 0) {
-                    $valor = max($valor - 5, 100);
+                    $v = max($v - 5, 100);
                 }
             }
-        }
-        // fallback: parcelas iguais
-        else {
+        } else {
             $base = round($valorTotalPlano / $prazo, 2);
             for ($i = 0; $i < $prazo; $i++) {
                 $parcelasArray[] = $base;
             }
         }
 
-        // monta array de inserção
+        $pagamentos = [];
+        // data inicial: aceito_em ou now
+        $dataContrato = Carbon::parse($contrato->aceito_em);
+
         foreach ($parcelasArray as $idx => $valorParcela) {
+            if ($idx === 0) {
+                // 1ª parcela: dia do contrato
+                $vencimento = $dataContrato;
+            } else {
+                // demais: adiciona meses e fixa dia escolhido
+                $vencimento = $dataContrato->copy()
+                    ->addMonthsNoOverflow($idx)
+                    ->day($diaVencimento);
+            }
+
             $pagamentos[] = [
                 'contrato_id' => $contrato->id,
-                'vencimento'  => $inicio->copy()->addMonths($idx),
+                'vencimento'  => $vencimento,
                 'valor'       => $valorParcela * $qtdCotas,
                 'status'      => 'pendente',
                 'created_at'  => now(),
@@ -152,15 +159,13 @@ class ContratoController extends Controller
             ];
         }
 
-        // insere no banco
         \App\Models\Pagamento::insert($pagamentos);
 
-        \Log::info('Pagamentos gerados conforme plano consorcio', [
+        \Log::info('Pagamentos gerados com vencimentos ajustados', [
             'contrato_id'      => $contrato->id,
             'quantidade_cotas' => $qtdCotas,
-            'total_parcelas'   => count($parcelasArray),
-            'prazo_plano'      => $prazo,
-            'juros'            => $taxaJuros
+            'parcelas'         => count($parcelasArray),
+            'dia_vencimento'   => $diaVencimento
         ]);
     }
 }

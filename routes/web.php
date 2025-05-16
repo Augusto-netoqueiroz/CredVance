@@ -102,7 +102,9 @@ Route::get('/cliente/data', [ClienteController::class, 'data'])
 
 
 Route::middleware('auth')->group(function () {
-Route::get('/usuarios', [UsuarioController::class, 'index'])->name('usuarios.index');
+Route::get('/usuarios', [UsuarioController::class, 'index'])
+->middleware(['auth', 'verified'])
+->name('usuarios.index');
 Route::get('/usuarios/cadastrar', [UsuarioController::class, 'create'])->name('usuarios.create');
 Route::post('/cadastrar/salvar', [UsuarioController::class, 'store'])->name('usuarios.store');
 Route::post('/usuarios/{id}/delete', [UsuarioController::class, 'delete'])->name('usuarios.delete');

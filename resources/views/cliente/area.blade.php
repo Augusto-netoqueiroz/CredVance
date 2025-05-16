@@ -25,6 +25,29 @@
     </div>
     @endif
 
+
+
+    @if(session('error'))
+    <div 
+        x-data="{ open: true }"
+        x-show="open"
+        x-transition
+        class="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50"
+    >
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md p-6 text-center">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                {{ session('error') }}
+            </h2>
+            <button @click="open = false"
+                class="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">
+                OK
+            </button>
+        </div>
+    </div>
+@endif
+
+    
+
     <div class="py-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div class="max-w-7xl mx-auto">
 

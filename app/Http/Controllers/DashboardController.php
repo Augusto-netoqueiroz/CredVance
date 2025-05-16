@@ -15,9 +15,11 @@ class DashboardController extends Controller
 {
      public function index()
     {
-        if (auth()->user()->role !== 'admin') {
-            abort(403, 'Acesso negado.');
-        }
+          if (auth()->user()->role !== 'admin') {
+        return redirect()
+            ->route('Inicio')
+            ->with('error', 'Você não tem permissão para acessar essa página');
+    }
 
           ActivityLoggerService::registrar(
             'Dashboard',

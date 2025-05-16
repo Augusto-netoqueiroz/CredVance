@@ -14,6 +14,13 @@ class UsuarioController extends Controller
     // Registro de atividade para a listagem de usuários
     public function index()
     {
+
+        if (auth()->user()->role !== 'admin') {
+        return redirect()
+            ->route('Inicio')
+            ->with('error', 'Você não tem permissão para acessar essa página');
+    }
+
         $usuarios = User::where('ativo', 1)->paginate(10);
 
          ActivityLoggerService::registrar(
