@@ -30,7 +30,7 @@
                     </div>
                 </div>
 
-                <div onclick="openModal('modalFaturamento')" class="cursor-pointer flex items-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
+                <div onclick="openModal('modalFaturamento')" class="cursor-pointer flex itens-center gap-4 bg-white dark:bg-gray-800 p-4 rounded-xl shadow hover:shadow-lg transition-transform hover:scale-[1.02]">
                     <div class="p-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-300 rounded-full">
                         <i data-lucide="dollar-sign" class="w-6 h-6"></i>
                     </div>
@@ -103,7 +103,7 @@
             </div>
             @endforeach
 
-          <!-- Gráficos -->
+            <!-- Gráficos -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-white mb-4">Vendas dos últimos 6 meses</h3>
@@ -128,7 +128,7 @@
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg">
                     <h3 class="text-lg font-semibold text-gray-700 dark:text-white mb-4">Próximas Assembleias</h3>
                     <div class="text-gray-500 dark:text-gray-400 text-sm">(Listagem futura)</div>
-                </div>
+                '</div>
             </div>
 
             <!-- Atividades Recentes -->
@@ -139,7 +139,7 @@
 
             <!-- Atalhos Rápidos -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-                <a href="{{ route('boleto.manage.form') }}" class="flex items-center justify-center bg-gradient-to-r from-green-500 to-green-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Registrar boleto</a>
+                <a href="{{ route('boleto.manage.form') }}" class="flex items-center justify-center bg-gradient-to-r from-green-500 to- green-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Registrar boleto</a>
                 <a href="{{ route('usuarios.index') }}" class="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-indigo-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Gerenciar Usuários</a>
                 <a href="{{ route('contratos.create') }}" class="flex items-center justify-center bg-gradient-to-r from-purple-500 to-purple-700 hover:opacity-90 text-white font-medium py-3 rounded-xl shadow transition">Criar Contrato</a>
             </div>
@@ -147,60 +147,133 @@
         </div>
     </div>
 
-   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const ctxBar = document.getElementById('chartVendasMes').getContext('2d');
-        new Chart(ctxBar, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($graficoMeses) !!},
-                datasets: [{
-                    label: 'Cotas Vendidas',
-                    data: {!! json_encode($graficoValores) !!},
-                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-            }
-        });
-
-        const ctxBar2 = document.getElementById('chartFaturamento').getContext('2d');
-        new Chart(ctxBar2, {
-            type: 'bar',
-            data: {
-                labels: {!! json_encode($graficoFaturamentoLabels) !!},
-                datasets: [
-                    {
-                        label: 'Recebido',
-                        data: {!! json_encode($graficoFaturamentoPago) !!},
-                        backgroundColor: 'rgba(34, 197, 94, 0.7)',
-                        borderRadius: 6
-                    },
-                    {
-                        label: 'Pendente',
-                        data: {!! json_encode($graficoFaturamentoPendente) !!},
-                        backgroundColor: 'rgba(239, 68, 68, 0.7)',
-                        borderRadius: 6
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: { beginAtZero: true }
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctxBar = document.getElementById('chartVendasMes').getContext('2d');
+            new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($graficoMeses) !!},
+                    datasets: [{
+                        label: 'Cotas Vendidas',
+                        data: {!! json_encode($graficoValores) !!},
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderRadius: 8
+                    }]
                 },
-                plugins: {
-                    legend: { position: 'bottom' }
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
                 }
-            }
+            });
+
+            const ctxBar2 = document.getElementById('chartFaturamento').getContext('2d');
+            new Chart(ctxBar2, {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($graficoFaturamentoLabels) !!},
+                    datasets: [
+                        {
+                            label: 'Recebido',
+                            data: {!! json_encode($graficoFaturamentoPago) !!},
+                            backgroundColor: 'rgba(34, 197, 94, 0.7)',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Pendente',
+                            data: {!! json_encode($graficoFaturamentoPendente) !!},
+                            backgroundColor: 'rgba(239, 68, 68, 0.7)',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true } },
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            if (window.lucide) lucide.createIcons();
         });
+    </script>
 
-        if (window.lucide) lucide.createIcons();
-    });
-</script>
+    <!-- Modal Control Functions -->
+    <script>
+      // Abre modal e busca dados
+      function openModal(modalId) {
+        const urlMap = {
+          modalCotas: '/dashboard/detalhes/cotas',
+          modalContratos: '/dashboard/detalhes/contratos',
+          modalFaturamento: '/dashboard/detalhes/faturamento',
+          modalPendentes: '/dashboard/detalhes/pendentes'
+        };
+        const url = urlMap[modalId];
+        if (!url) return console.error(`URL não encontrada para ${modalId}`);
+        fetch(url)
+          .then(res => res.json())
+          .then(items => {
+            const tbody = document.getElementById(`${modalId}Table`);
+            tbody.innerHTML = '';
+            if (items.length) {
+              items.forEach(item => {
+                let row = '<tr>';
+                if (modalId === 'modalCotas' || modalId === 'modalContratos') {
+                  row += `<td class=\"px-4 py-2\">${item['Cliente']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Cotas']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Criado Em']}</td>`;
+                } else if (modalId === 'modalFaturamento') {
+                  row += `<td class=\"px-4 py-2\">${item['Cliente']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Valor']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Vencimento']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Pago Em']}</td>`;
+                } else {
+                  row += `<td class=\"px-4 py-2\">${item['Cliente']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Valor']}</td>` +
+                         `<td class=\"px-4 py-2\">${item['Vencimento']}</td>`;
+                }
+                row += '</tr>';
+                tbody.innerHTML += row;
+              });
+            } else {
+              tbody.innerHTML = `<tr><td class=\"px-4 py-2 text-center\" colspan=\"${modalId==='modalFaturamento'?4:3}\">Sem dados disponíveis</td></tr>`;
+            }
+            document.getElementById(modalId).classList.remove('hidden');
+          })
+          .catch(err => {
+            console.error(err);
+            const tbody = document.getElementById(`${modalId}Table`);
+            tbody.innerHTML = `<tr><td class=\"px-4 py-2 text-center\" colspan=\"${modalId==='modalFaturamento'?4:3}\">Erro ao carregar dados</td></tr>`;
+            document.getElementById(modalId).classList.remove('hidden');
+          });
+      }
 
+      // Fecha modal
+      function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+      }
+
+      // Fecha ao clicar no backdrop
+      function handleBackdropClick(event, modalId) {
+        if (event.target.id === modalId) closeModal(modalId);
+      }
+
+      // Exporta dados
+      function exportData(modal, type) {
+        const exportUrls = {
+          cotas: '/dashboard/detalhes/cotas',
+          contratos: '/dashboard/detalhes/contratos',
+          faturamento: '/dashboard/detalhes/faturamento',
+          pendentes: '/dashboard/detalhes/pendentes'
+        };
+        const base = exportUrls[modal];
+        if (!base) {
+          console.error('Modal inválido para export:', modal);
+          return;
+        }
+        window.open(`${base}?export=${type}`, '_blank');
+      }
+    </script>
 </x-app-layout>
