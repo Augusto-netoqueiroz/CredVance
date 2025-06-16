@@ -80,7 +80,7 @@
 </header>
 
 <main class="main">
-  <div class="page-title dark-background" id="simulacao" data-aos="fade" style="background-image: url('assets/img/page-title-bg.webp');">
+  <div class="page-title dark-background" id="simulacao" data-aos="fade" style="background-image: url('assets/img/hero2.png');">
     <div class="container position-relative">
       <h1>Planos & Simulação</h1>
       <p>Entenda nosso modelo de consórcio e simule quantas cotas desejar.</p>

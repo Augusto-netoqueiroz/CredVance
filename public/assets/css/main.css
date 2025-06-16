@@ -882,7 +882,7 @@ section,
 }
 
 /*--------------------------------------------------------------
-# Hero Section
+# Hero Section (ajustado)
 --------------------------------------------------------------*/
 .hero {
   width: 100%;
@@ -892,21 +892,27 @@ section,
   display: flex;
   align-items: center;
   justify-content: center;
+  background-color: #007bff; /* Fallback de cor azul */
+  overflow: hidden;
 }
 
 .hero img {
   position: absolute;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  top: 50%;
+  left: 50%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+  transform: translate(-50%, -50%) scale(1.0);  /* Reduz bastante o zoom */
   z-index: 1;
+  object-fit: contain; /* Não corta mais a imagem */
 }
 
-.hero:before {
+/* Remove overlay escurecido */
+.hero::before {
   content: "";
-  background: color-mix(in srgb, var(--background-color), transparent 30%);
+  background: none !important;
   position: absolute;
   inset: 0;
   z-index: 2;
@@ -972,12 +978,43 @@ section,
   color: color-mix(in srgb, var(--accent-color), transparent 20%);
 }
 
+/* Responsivo */
 @media (max-width: 768px) {
+  .hero {
+    padding: 40px 0;
+  }
+
+  .hero img {
+    transform: translate(-50%, -50%) scale(0.6); /* Reduz mais no mobile */
+  }
+
   .hero h2 {
     font-size: 32px;
   }
+
   .hero p {
     font-size: 18px;
+  }
+}
+
+
+/* Efeito pulsante no botão */
+.pulse {
+  animation: pulseEffect 1.5s infinite;
+}
+
+@keyframes pulseEffect {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(255, 193, 7, 0.8);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 193, 7, 0.7);
   }
 }
 

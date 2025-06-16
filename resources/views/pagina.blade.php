@@ -61,26 +61,36 @@
 
   <main class="main">
 
-    <!-- ======= Hero Section (Fundo escuro) ======= -->
-    <section id="hero" class="hero section dark-background">
-   <!--   <img src="assets/img/hero-bg.jpg" alt="" data-aos="fade-in"> -->
-      <div class="container d-flex flex-column align-items-center">
-        <h2 data-aos="fade-up" data-aos-delay="100">Seu Consórcio Começa Aqui</h2>
-        <p data-aos="fade-up" data-aos-delay="200">
-          O melhor caminho para conquistar o seu sonho sem pagar juros.
+<!-- ======= Hero Section ======= -->
+<!-- ======= Hero Section ======= -->
+<section id="hero" class="hero text-white" style="
+  height: 400px;
+  background: url('assets/img/hero2.png') center center no-repeat;
+  background-size: cover;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+">
+  <div class="container position-relative z-2">
+    <div class="row">
+      <div class="col-md-6">
+        <h1 class="fw-bold display-5 mb-3 text-white">💥 Multiplique seu dinheiro com a CredVance!</h1>
+        <p class="fs-4 mb-1 text-white">
+          Comece com parcelas de <strong>R$ 155,00</strong> e receba até
+          <strong>R$ 3.672,00</strong> com juros garantidos!
         </p>
-        <div class="d-flex mt-4" data-aos="fade-up" data-aos-delay="300">
-          <a href="#about" class="btn-get-started">Começar Agora</a>
-
-          <!-- Video de apresentação - desativado por enquanto
-            <a href="https://www.youtube.com/watch?v=Y7f98aduVJ8" class="glightbox btn-watch-video d-flex align-items-center">
-            <i class="bi bi-play-circle"></i><span>Assista ao Vídeo</span>
-          </a>  -->
-
-        </div>
+        <p class="fst-italic text-white">(12 ou 24 meses – sem taxa de adesão!)</p>
+        <a href="/Service" class="btn btn-warning fw-bold text-dark px-4 py-2 rounded shadow mt-3 pulse">
+          Simular Agora
+        </a>
       </div>
-    </section>
-    <!-- End Hero Section -->
+    </div>
+  </div>
+</section>
+
+
+
 
     <!-- ======= Sobre Section (Fundo claro) ======= -->
     <section id="about" class="about section light-background">
