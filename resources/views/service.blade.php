@@ -22,6 +22,7 @@
   <link href="assets/css/main.css" rel="stylesheet">
 
   <style>
+    /* estilos da tabela e do formulário */
     #service-details table {
       border-collapse: separate !important;
       border-spacing: 0;
@@ -55,50 +56,69 @@
         margin-bottom: 1rem;
       }
     }
+
+    /* Botão flutuante no canto inferior direito */
+    #btnCadastroFlutuante {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 1000;
+      border-radius: 50px;
+      padding: 12px 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      display: none; /* começa oculto */
+    }
+    #btnCadastroFlutuante.pulsar {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50%    { transform: scale(1.1); }
+    }
   </style>
 </head>
 <body class="index-page">
 
-<header id="header" class="header d-flex align-items-center fixed-top">
-  <div class="container-fluid container-xl position-relative d-flex align-items-center">
-    <a href="/pagina#hero" class="logo d-flex align-items-center me-auto">
-      <h1 class="sitename">Cred Vance</h1>
-    </a>
-    <nav id="navmenu" class="navmenu">
-      <ul>
-        <li><a href="/pagina#hero">Início</a></li>
-        <li><a href="/pagina#about">Sobre</a></li>
-        <li><a href="/pagina#services">Planos</a></li>
-        <li><a href="/pagina#simulacao">Simulador de Parcelas</a></li>
-        <li><a href="/pagina#stats">Estatísticas</a></li>
-        <li><a href="/pagina#contact">Contato</a></li>
-      </ul>
-      <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
-    </nav>
-    <a class="cta-btn" href="{{ route('login') }}">Área do Cliente</a>
-  </div>
-</header>
-
-<main class="main">
-  <div class="page-title dark-background" id="simulacao" data-aos="fade" style="background-image: url('assets/img/hero2.png');">
-    <div class="container position-relative">
-      <h1>Planos & Simulação</h1>
-      <p>Entenda nosso modelo de consórcio e simule quantas cotas desejar.</p>
+  <header id="header" class="header d-flex align-items-center fixed-top">
+    <div class="container-fluid container-xl position-relative d-flex align-items-center">
+      <a href="/pagina#hero" class="logo d-flex align-items-center me-auto">
+        <h1 class="sitename">Cred Vance</h1>
+      </a>
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="/pagina#hero">Início</a></li>
+          <li><a href="/pagina#about">Sobre</a></li>
+          <li><a href="/pagina#services">Planos</a></li>
+          <li><a href="/pagina#simulacao">Simulador de Parcelas</a></li>
+          <li><a href="/pagina#stats">Estatísticas</a></li>
+          <li><a href="/pagina#contact">Contato</a></li>
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+      <a class="cta-btn" href="{{ route('login') }}">Área do Cliente</a>
     </div>
-  </div>
+  </header>
 
-  <section id="service-details" class="service-details section dark-background">
-    <div class="container" data-aos="fade-up">
-      <div class="row">
-        <div class="col-12">
-          <h3 class="mb-2">Simule seu plano ideal</h3>
-          <p class="small">
-            Escolha entre nossos dois planos com parcelas decrescentes e retorno garantido:<br>
-            - <strong>Plano 12 meses</strong>: 12 parcelas de R$155,00 a R$100,00, com juros de 16%.<br>
-            - <strong>Plano 24 meses</strong>: 24 parcelas de R$155,00 a R$100,00 (em pares), com juros de 20%.<br>
-            Digite a quantidade de cotas desejada e clique em "Calcular" para visualizar os valores.
-          </p>
-          <div class="d-flex align-items-center gap-2 mb-3">
+  <main class="main">
+    <div class="page-title dark-background" id="simulacao" data-aos="fade" style="background-image: url('assets/img/hero2.png');">
+      <div class="container position-relative">
+        <h1>Planos & Simulação</h1>
+        <p>Entenda nosso modelo de consórcio e simule quantas cotas desejar.</p>
+      </div>
+    </div>
+
+    <section id="service-details" class="service-details section dark-background">
+      <div class="container" data-aos="fade-up">
+        <div class="row">
+          <div class="col-12">
+            <h3 class="mb-2">Simule seu plano ideal</h3>
+            <p class="small">
+              Escolha entre nossos dois planos com parcelas decrescentes e retorno garantido:<br>
+              - <strong>Plano 12 meses</strong>: 12 parcelas de R$155,00 a R$100,00, com juros de 16%.<br>
+              - <strong>Plano 24 meses</strong>: 24 parcelas de R$155,00 a R$100,00 (em pares), com juros de 20%.<br>
+              Digite a quantidade de cotas desejada e clique em "Calcular" para visualizar os valores.
+            </p>
+            <div class="d-flex align-items-center gap-2 mb-3">
               <select id="planoToggle" class="form-select form-select-sm w-auto">
                 <option value="12">Plano 12 Meses</option>
                 <option value="24">Plano 24 Meses</option>
@@ -108,75 +128,88 @@
               <button onclick="atualizarTabela()" class="btn btn-light btn-sm">Calcular</button>
             </div>
 
-          <div id="tabelaParcelas"></div>
+            <div id="tabelaParcelas"></div>
+          </div>
         </div>
       </div>
+    </section>
+  </main>
+
+  <footer id="footer" class="footer dark-background">
+    <div class="container text-center">
+      <p>&copy; Copyright <strong class="px-1 sitename">Cred Vance</strong>. Todos os direitos reservados.</p>
     </div>
-  </section>
-</main>
+  </footer>
 
-<footer id="footer" class="footer dark-background">
-  <div class="container text-center">
-    <p>&copy; Copyright <strong class="px-1 sitename">Cred Vance</strong>. Todos os direitos reservados.</p>
-  </div>
-</footer>
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
+    <i class="bi bi-arrow-up-short"></i>
+  </a>
 
-<a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center">
-  <i class="bi bi-arrow-up-short"></i>
-</a>
+  <div id="preloader"></div>
 
-<div id="preloader"></div>
+  <!-- Botão flutuante -->
+  <a href="{{ route('register') }}" id="btnCadastroFlutuante" class="btn btn-primary pulsar">
+    Cadastre-se Agora!
+  </a>
 
-<script>
-function atualizarTabela() {
-  const plano = parseInt(document.getElementById('planoToggle').value);
-  const q = parseInt(document.getElementById('quantidadeCotas').value) || 1;
-  let parcelas = [];
-  let juros = '';
-  if (plano === 12) {
-    parcelas = [155,150,145,140,135,130,125,120,115,110,105,100];
-    juros = '16%';
-  } else {
-    parcelas = [155,155,150,150,145,145,140,140,135,135,130,130,125,125,120,120,115,115,110,110,105,105,100,100];
-    juros = '20%';
-  }
-  let html = `<h5 class='small'>Plano ${plano} Meses</h5><table class='table table-sm table-bordered'>
-    <thead><tr><th>Mês</th><th>Por Cota</th><th>Total</th></tr></thead><tbody>`;
-  let totalPago = 0;
-  for (let i = 0; i < parcelas.length; i++) {
-    const valor = parcelas[i];
-    const total = valor * q;
-    totalPago += total;
-    html += `<tr><td>${i + 1}</td><td>R$ ${valor.toFixed(2).replace('.', ',')}</td><td>R$ ${total.toFixed(2).replace('.', ',')}</td></tr>`;
-  }
-  html += `</tbody></table>`;
-  const retornoFinal = plano === 12 ? 1774.80 * q : 3672.00 * q;
-  html += `<div class='bg-white p-3 rounded shadow-sm text-black'>
-    <p class='small mb-1'><strong>Juros:</strong> ${juros}</p>
-    <p class='small mb-1'><strong>Total Pago:</strong> R$ ${totalPago.toFixed(2).replace('.', ',')}</p>
-    <p class='small'><strong>Retorno Final:</strong> R$ ${retornoFinal.toFixed(2).replace('.', ',')}</p>
-  </div>`;
-  document.getElementById('tabelaParcelas').innerHTML = html;
-}
+  <!-- Scripts -->
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/vendor/php-email-form/validate.js"></script>
+  <script src="assets/vendor/aos/aos.js"></script>
+  <script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
+  <script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
+  <script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
+  <script src="assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
+  <script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
 
-window.addEventListener('DOMContentLoaded', () => atualizarTabela());
-document.getElementById('planoToggle').addEventListener('change', atualizarTabela);
-</script>
+  <script>
+    function atualizarTabela() {
+      const plano = parseInt(document.getElementById('planoToggle').value);
+      const q = parseInt(document.getElementById('quantidadeCotas').value) || 1;
+      let parcelas = [], juros = '';
+      if (plano === 12) {
+        parcelas = [155,150,145,140,135,130,125,120,115,110,105,100];
+        juros = '16%';
+      } else {
+        parcelas = [155,155,150,150,145,145,140,140,135,135,130,130,125,125,120,120,115,115,110,110,105,105,100,100];
+        juros = '20%';
+      }
 
-<script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-<script src="assets/vendor/php-email-form/validate.js"></script>
-<script src="assets/vendor/aos/aos.js"></script>
-<script src="assets/vendor/glightbox/js/glightbox.min.js"></script>
-<script src="assets/vendor/purecounter/purecounter_vanilla.js"></script>
-<script src="assets/vendor/swiper/swiper-bundle.min.js"></script>
-<script src="assets/vendor/imagesloaded/imagesloaded.pkgd.min.js"></script>
-<script src="assets/vendor/isotope-layout/isotope.pkgd.min.js"></script>
-<script>
-if (window.AOS) AOS.init({ duration: 800, once: true });
-window.addEventListener('load', function() {
-  const pre = document.getElementById('preloader');
-  if (pre) pre.remove();
-});
-</script>
+      let html = `<h5 class='small'>Plano ${plano} Meses</h5>
+        <table class='table table-sm table-bordered'>
+          <thead><tr><th>Mês</th><th>Por Cota</th><th>Total</th></tr></thead>
+          <tbody>`;
+      let totalPago = 0;
+      parcelas.forEach((valor, i) => {
+        const total = valor * q;
+        totalPago += total;
+        html += `<tr>
+          <td>${i + 1}</td>
+          <td>R$ ${valor.toFixed(2).replace('.', ',')}</td>
+          <td>R$ ${total.toFixed(2).replace('.', ',')}</td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+
+      const retornoFinal = plano === 12 ? 1774.80 * q : 3672.00 * q;
+      html += `<div class='bg-white p-3 rounded shadow-sm text-black'>
+        <p class='small mb-1'><strong>Juros:</strong> ${juros}</p>
+        <p class='small mb-1'><strong>Total Pago:</strong> R$ ${totalPago.toFixed(2).replace('.', ',')}</p>
+        <p class='small'><strong>Retorno Final:</strong> R$ ${retornoFinal.toFixed(2).replace('.', ',')}</p>
+      </div>`;
+
+      document.getElementById('tabelaParcelas').innerHTML = html;
+
+      // Exibe o botão flutuante
+      document.getElementById('btnCadastroFlutuante').style.display = 'block';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      atualizarTabela();
+      if (window.AOS) AOS.init({ duration: 800, once: true });
+      const pre = document.getElementById('preloader');
+      if (pre) pre.remove();
+    });
+  </script>
 </body>
 </html>

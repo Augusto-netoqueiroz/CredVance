@@ -22,6 +22,9 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\BoletoController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\NewPasswordController;
+use App\Http\Controllers\BoletoTestController;
+use App\Http\Controllers\InterBoletoTestController;
+use App\Http\Controllers\InterWebhookController;
  
 
 
@@ -47,6 +50,11 @@ Route::get('/', function () {
 //Template prinicial - rota por enquanto
 route::get('/pagina', function () {
     return view('pagina');
+});
+
+//Template prinicial - rota por enquanto
+route::get('/pagina2', function () {
+    return view('paginanova');
 });
 
 //Template service - rota por enquanto
@@ -331,3 +339,84 @@ Route::get('boleto/download/{pagamento}', [BoletoController::class, 'download'])
     Route::get('/boletos/comprovante/{pagamento}', [BoletoController::class, 'baixarComprovante'])
     ->name('boleto.comprovante.download')
     ->middleware('auth');
+
+
+    //teste
+
+ // rota atual para teste via formulário
+Route::get('/boleto-test',  [BoletoTestController::class, 'showForm'])->name('boleto.form');
+Route::post('/boleto-test', [BoletoTestController::class, 'createBoleto'])->name('boleto.create');
+
+ 
+Route::get('/boleto-auto',  [BoletoTestController::class, 'generateAuto'])->name('boleto.auto');
+
+Route::get('/debug-payments', [BoletoTestController::class, 'debugPayments'])
+     ->name('debug.payments');
+
+
+
+// Formulário de teste
+Route::get('/inter-boleto-test', [InterBoletoTestController::class, 'showForm'])
+    ->name('inter.boleto.form');
+
+// Geração de boleto
+Route::post('/inter-boleto-test', [InterBoletoTestController::class, 'createBoleto'])
+    ->name('inter.boleto.create');
+
+// Ping de conexão mTLS + OAuth2
+Route::get('/inter-boleto-ping', [InterBoletoTestController::class, 'pingConnection'])
+    ->name('inter.boleto.ping');
+
+    Route::get('/inter/ping', [InterBoletoTestController::class, 'pingConnection']);
+Route::get('/inter/form', [InterBoletoTestController::class, 'showForm']);
+Route::post('/inter/boletos', [InterBoletoTestController::class, 'createBoleto']);
+
+
+
+// Mostrar formulário de emissão de cobrança
+Route::get('/inter/boletos', [InterBoletoTestController::class, 'showForm'])->name('inter.boletos.form');
+// Enviar formulário para criar cobrança
+Route::post('/inter/boletos', [InterBoletoTestController::class, 'createBoleto'])->name('inter.boletos.create');
+
+// Formulário de consulta de cobrança pelo código
+Route::get('/inter/boletos/consulta', function(){
+    return view('inter_boleto_consulta');
+})->name('inter.boletos.consulta.form');
+// Submissão para consultar
+Route::post('/inter/boletos/consulta', [InterBoletoTestController::class, 'showCobranca'])->name('inter.boletos.consulta');
+
+// Listagem de cobranças: exibe formulário com filtros
+Route::get('/inter/boletos/listagem', function(){
+    return view('inter_boleto_listagem_form');
+})->name('inter.boletos.listagem.form');
+// Submissão dos filtros para listar
+Route::get('/inter/boletos/listagem/result', [InterBoletoTestController::class, 'listCobrancas'])->name('inter.boletos.listagem.result');
+
+// Ping/health check
+Route::get('/inter/ping', [InterBoletoTestController::class, 'pingConnection'])->name('inter.ping');
+ 
+
+Route::post('/inter/webhook/cobranca', [InterWebhookController::class, 'handleCobranca'])
+     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
+
+
+     Route::get('/inter/boletos', [InterBoletoTestController::class, 'showForm'])->name('inter.boletos');
+Route::post('/inter/boletos/create', [InterBoletoTestController::class, 'createBoleto'])->name('inter.boletos.create');
+Route::post('/inter/boletos/consulta', [InterBoletoTestController::class, 'showCobranca'])->name('inter.boletos.consulta');
+Route::get('/inter/boletos/listagem', [InterBoletoTestController::class, 'listCobrancas'])->name('inter.boletos.listagem');
+
+Route::post('/inter/boletos/download', [InterBoletoTestController::class, 'downloadBoleto'])
+    ->name('inter.boletos.download');
+
+      // Visualização inline do PDF do boleto (GET)
+    Route::get('/{codigo}/pdf', [InterBoletoTestController::class, 'pdfView'])
+        ->where('codigo', '[0-9a-fA-F\-]+')
+        ->name('inter.boletos.pdfview');
+
+    // Download forçado do PDF do boleto (POST)
+    Route::post('/download', [InterBoletoTestController::class, 'downloadPdf'])
+        ->name('inter.boletos.download');
+        
+        Route::get('/inter/boletos/{codigo}/pdf', [InterBoletoTestController::class, 'pdfView'])
+    ->name('inter.boletos.pdfview');

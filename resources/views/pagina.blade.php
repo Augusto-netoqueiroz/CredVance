@@ -27,6 +27,29 @@
 
   <!-- Main CSS File (com paleta azul/branco) -->
   <link href="assets/css/main.css" rel="stylesheet">
+
+  <!-- ***********************
+       Botão flutuante "Cadastre-se Agora!"
+       ************************ -->
+  <style>
+    #btnCadastroFlutuante {
+      position: fixed;
+      bottom: 80px;      /* antes: 20px */
+      right: 20px;
+      z-index: 1000;
+      border-radius: 50px;
+      padding: 12px 20px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      display: block;
+    }
+    #btnCadastroFlutuante.pulsar {
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50%       { transform: scale(1.1); }
+    }
+  </style>
 </head>
 
 <body class="index-page">
@@ -61,38 +84,34 @@
 
   <main class="main">
 
-<!-- ======= Hero Section ======= -->
-<!-- ======= Hero Section ======= -->
-<section id="hero" class="hero text-white" style="
-  height: 400px;
-  background: url('assets/img/hero2.png') center center no-repeat;
-  background-size: cover;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-">
-  <div class="container position-relative z-2">
-    <div class="row">
-      <div class="col-md-6">
-        <h1 class="fw-bold display-5 mb-3 text-white">💥 Multiplique seu dinheiro com a CredVance!</h1>
-        <p class="fs-4 mb-1 text-white">
-          Comece com parcelas de <strong>R$ 155,00</strong> e receba até
-          <strong>R$ 3.672,00</strong> com juros garantidos!
-        </p>
-        <p class="fst-italic text-white">(12 ou 24 meses – sem taxa de adesão!)</p>
-        <a href="/Service" class="btn btn-warning fw-bold text-dark px-4 py-2 rounded shadow mt-3 pulse">
-          Simular Agora
-        </a>
+    <!-- ======= Hero Section ======= -->
+    <section id="hero" class="hero text-white" style="
+      height: 400px;
+      background: url('assets/img/hero2.png') center center no-repeat;
+      background-size: cover;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+    ">
+      <div class="container position-relative z-2">
+        <div class="row">
+          <div class="col-md-6">
+            <h1 class="fw-bold display-5 mb-3 text-white">💥 Multiplique seu dinheiro com a CredVance!</h1>
+            <p class="fs-4 mb-1 text-white">
+              Comece com parcelas de <strong>R$ 155,00</strong> e receba até
+              <strong>R$ 3.672,00</strong> com juros garantidos!
+            </p>
+            <p class="fst-italic text-white">(12 ou 24 meses – sem taxa de adesão!)</p>
+            <a href="/Service" class="btn btn-warning fw-bold text-dark px-4 py-2 rounded shadow mt-3 pulse">
+              Simular Agora
+            </a>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-</section>
+    </section>
 
-
-
-
-    <!-- ======= Sobre Section (Fundo claro) ======= -->
+    <!-- ======= Sobre Section ======= -->
     <section id="about" class="about section light-background">
       <div class="container">
         <div class="row gy-4">
@@ -127,7 +146,7 @@
     </section>
     <!-- End Sobre Section -->
 
-    <!-- ======= Planos (Services) Section (Fundo claro) ======= -->
+    <!-- ======= Planos Section ======= -->
     <section id="services" class="services section light-background">
       <div class="container section-title" data-aos="fade-up">
         <h2>Planos</h2>
@@ -136,70 +155,26 @@
 
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-5">
-        <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="200">
-  <div class="service-item" 
-       onclick="window.location.href='/Service';" 
-       style="cursor: pointer;">
-    <div class="img">
-      <img src="assets/img/services-1.jpg" class="img-fluid" alt="">
-    </div>
-    <div class="details position-relative">
-      <div class="icon">
-        <i class="bi bi-activity"></i>
-      </div>
-      <h3>Simulador de Parcela</h3>
-      <p>
-        Simule já a sua parcela de forma Fácil e Rápida.
-      </p>
-    </div>
-  
- 
-            </div>
-          </div>
-          <!-- End Service Item -->
- <!--
-          <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="300">
-            <div class="service-item">
+          <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="200">
+            <div class="service-item" onclick="window.location.href='/Service';" style="cursor: pointer;">
               <div class="img">
-                <img src="assets/img/services-2.jpg" class="img-fluid" alt="">
+                <img src="assets/img/services-1.jpg" class="img-fluid" alt="">
               </div>
               <div class="details position-relative">
                 <div class="icon">
-                  <i class="bi bi-broadcast"></i>
+                  <i class="bi bi-activity"></i>
                 </div>
-                <h3>Consórcio Imobiliário</h3>
-                <p>
-                  Realize o sonho da casa própria por meio de grupos consolidados.
-                </p>
+                <h3>Simulador de Parcela</h3>
+                <p>Simule já a sua parcela de forma Fácil e Rápida.</p>
               </div>
             </div>
           </div>
-            -->
-
-           <!--
-          <div class="col-xl-4 col-md-6" data-aos="zoom-in" data-aos-delay="400">
-            <div class="service-item">
-              <div class="img">
-                <img src="assets/img/services-3.jpg" class="img-fluid" alt="">
-              </div>
-              <div class="details position-relative">
-                <div class="icon">
-                  <i class="bi bi-easel"></i>
-                </div>
-                <h3>Outros Serviços</h3>
-                <p>
-                  Viajem, reformas, tratamentos... Tudo via consórcio, sem juros e com segurança.
-                </p>
-              </div>
-            </div>
-          </div>
-          -->
         </div>
       </div>
     </section>
     <!-- End Planos Section -->
 
-    <!-- ======= Estatísticas Section (Fundo escuro) ======= -->
+    <!-- ======= Estatísticas Section ======= -->
     <section id="stats" class="stats section dark-background">
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4">
@@ -212,13 +187,13 @@
               </div>
             </div>
           </div>
-          <!-- etc... -->
+          <!-- … demais itens … -->
         </div>
       </div>
     </section>
     <!-- End Estatísticas Section -->
 
-    <!-- ======= Contato (Contact) Section (Fundo escuro) ======= -->
+    <!-- ======= Contato Section ======= -->
     <section id="contact" class="contact section dark-background">
       <div class="container section-title" data-aos="fade-up">
         <h2>Contato</h2>
@@ -227,64 +202,32 @@
       <div class="container" data-aos="fade-up" data-aos-delay="100">
         <div class="row gy-4">
           <div class="col-lg-6">
-            <div class="row gy-4">
-              <div class="col-lg-12">
-                <div class="info-item d-flex flex-column justify-content-center align-items-center">
-                  <i class="bi bi-geo-alt"></i>
-                  <h3>Endereço</h3>
-                  <p>Rua 35 Casa 101 Setor Tradicional - São Sebastião DF</p>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="info-item d-flex flex-column justify-content-center align-items-center">
-                  <i class="bi bi-telephone"></i>
-                  <h3>Telefone</h3>
-                  <p>+55 61 99625-8003</p>
-                </div>
-              </div>
-              <div class="col-md-6">
-                <div class="info-item d-flex flex-column justify-content-center align-items-center">
-                  <i class="bi bi-envelope"></i>
-                  <h3>Email</h3>
-                  <p>contato@meucredvance.com.br</p>
-                </div>
-              </div>
+            <div class="info-item d-flex flex-column justify-content-center align-items-center">
+              <i class="bi bi-geo-alt"></i>
+              <h3>Endereço</h3>
+              <p>Rua 35 Casa 101 Setor Tradicional - São Sebastião DF</p>
             </div>
           </div>
-
-          <!--
-          <div class="col-lg-6">
-            <form action="forms/contact.php" method="post" class="php-email-form">
-              <div class="row gy-4">
-                <div class="col-md-6">
-                  <input type="text" name="name" class="form-control" placeholder="Seu Nome" required>
-                </div>
-                <div class="col-md-6">
-                  <input type="email" class="form-control" name="email" placeholder="Seu Email" required>
-                </div>
-                <div class="col-md-12">
-                  <input type="text" class="form-control" name="subject" placeholder="Assunto" required>
-                </div>
-                <div class="col-md-12">
-                  <textarea class="form-control" name="message" rows="4" placeholder="Mensagem" required></textarea>
-                </div>
-                <div class="col-md-12 text-center">
-                  <div class="loading">Enviando...</div>
-                  <div class="error-message"></div>
-                  <div class="sent-message">Sua mensagem foi enviada com sucesso!</div>
-                  <button type="submit">Enviar Mensagem</button>
-                </div>
-              </div>
-            </form>
+          <div class="col-md-6">
+            <div class="info-item d-flex flex-column justify-content-center align-items-center">
+              <i class="bi bi-telephone"></i>
+              <h3>Telefone</h3>
+              <p>+55 61 99625-8003</p>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="info-item d-flex flex-column justify-content-center align-items-center">
+              <i class="bi bi-envelope"></i>
+              <h3>Email</h3>
+              <p>contato@credvance.com.br</p>
+            </div>
           </div>
         </div>
       </div>
     </section>
-      -->
-  
-  
-  
-    </main>
+    <!-- End Contato Section -->
+
+  </main>
 
   <!-- ======= Footer ======= -->
   <footer id="footer" class="footer dark-background">
@@ -294,11 +237,9 @@
           <a href="#hero" class="logo d-flex align-items-center">
             <span class="sitename">Cred Vance</span>
           </a>
-          <div class="footer-contact pt-3">
-            <p>Rua 35 Casa 101 Setor Tradicional<br>São Sebastião DF</p>
-            <p><strong>Telefone:</strong> +55 61 99625-8003</p>
-            <p><strong>Email:</strong> contato@credvance.com.br</p>
-          </div>
+          <p>Rua 35 Casa 101 Setor Tradicional<br>São Sebastião DF</p>
+          <p><strong>Telefone:</strong> +55 61 99625-8003</p>
+          <p><strong>Email:</strong> contato@credvance.com.br</p>
           <div class="social-links d-flex mt-4">
             <a href="#"><i class="bi bi-twitter"></i></a>
             <a href="#"><i class="bi bi-facebook"></i></a>
@@ -306,7 +247,6 @@
             <a href="#"><i class="bi bi-linkedin"></i></a>
           </div>
         </div>
-
         <div class="col-lg-2 col-md-3 footer-links">
           <h4>Links Úteis</h4>
           <ul>
@@ -317,29 +257,10 @@
             <li><i class="bi bi-chevron-right"></i> <a href="#contact">Contato</a></li>
           </ul>
         </div>
-
-        <!--
-        <div class="col-lg-6 col-md-12 footer-newsletter">
-          <h4>Newsletter</h4>
-          <p>Receba nossas novidades e ofertas exclusivas no seu email!</p>
-          <form action="forms/newsletter.php" method="post" class="php-email-form">
-            <div class="newsletter-form">
-              <input type="email" name="email" placeholder="Seu email"><input type="submit" value="Assinar">
-            </div>
-            <div class="loading">Enviando...</div>
-            <div class="error-message"></div>
-            <div class="sent-message">Inscrição realizada com sucesso!</div>
-          </form>
-        </div>
       </div>
     </div>
--->
-
     <div class="container copyright text-center mt-4">
-      <p>&copy; Copyright 
-        <strong class="px-1 sitename">Cred Vance</strong>. 
-        Todos os direitos reservados.
-      </p>
+      <p>&copy; <strong class="sitename">Cred Vance</strong>. Todos os direitos reservados.</p>
     </div>
   </footer>
   <!-- End Footer -->
@@ -364,6 +285,11 @@
 
   <!-- Main JS File -->
   <script src="assets/js/main.js"></script>
+
+  <!-- Botão flutuante -->
+  <a href="{{ route('register') }}" id="btnCadastroFlutuante" class="btn btn-primary pulsar">
+    Cadastre-se Agora!
+  </a>
 
 </body>
 </html>
