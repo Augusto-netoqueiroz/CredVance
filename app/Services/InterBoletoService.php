@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class InterBoletoService
 {
@@ -73,8 +74,20 @@ class InterBoletoService
         ]);
     }
 
+    /**
+     * Obtém token e cacheia até perto do vencimento.
+     *
+     * @return string
+     * @throws RuntimeException
+     */
     public function getToken(): string
     {
+        $cacheKey = 'inter_access_token';
+
+        if (Cache::has($cacheKey)) {
+            return Cache::get($cacheKey);
+        }
+
         $clientId     = env('INTER_CLIENT_ID');
         $clientSecret = env('INTER_CLIENT_SECRET');
         if (! $clientId || ! $clientSecret) {
@@ -103,88 +116,166 @@ class InterBoletoService
         if (! isset($json['access_token'])) {
             throw new RuntimeException("Resposta de token sem access_token: " . json_encode($json, JSON_UNESCAPED_UNICODE));
         }
+
+        $accessToken = $json['access_token'];
+        $expiresIn = isset($json['expires_in']) ? (int)$json['expires_in'] : 3600;
         Log::info('Token obtido com sucesso', [
             'scope_returned' => $json['scope'] ?? null,
-            'expires_in'     => $json['expires_in'] ?? null,
+            'expires_in'     => $expiresIn,
         ]);
-        return $json['access_token'];
+
+        $ttlSeconds = max($expiresIn - 60, 60);
+        Cache::put($cacheKey, $accessToken, Carbon::now()->addSeconds($ttlSeconds));
+
+        return $accessToken;
     }
 
+    /**
+     * Cria boleto na API Inter. Espera $data contendo chave 'sacado' e demais opcionais.
+     *
+     * @param array $data
+     * @return array
+     * @throws RuntimeException
+     */
     public function createBoleto(array $data): array
     {
         $token = $this->getToken();
 
+        // 1. Validar existência de data de vencimento
+        if (empty($data['data_vencimento'])) {
+            throw new RuntimeException("createBoleto: 'data_vencimento' ausente em data.");
+        }
         try {
             $dataVenc = Carbon::parse($data['data_vencimento']);
         } catch (\Exception $e) {
-            throw new RuntimeException("Formato de data inválido: " . $e->getMessage());
+            throw new RuntimeException("Formato de data inválido em 'data_vencimento': " . $e->getMessage());
         }
 
-        // Montar pagador
-        $logradouro = $data['sacado']['logradouro'];
-        $numero     = $data['sacado']['numero'];
-        $enderecoStr = trim($logradouro) . ', ' . trim($numero);
-        if (! empty($data['sacado']['complemento'] ?? null)) {
-            $enderecoStr .= ' ' . trim($data['sacado']['complemento']);
+        // 2. Validar sacado
+        if (empty($data['sacado']) || !is_array($data['sacado'])) {
+            throw new RuntimeException("createBoleto: chave 'sacado' ausente ou não é array.");
         }
+        $sacado = $data['sacado'];
+
+        // Campos obrigatórios em sacado: nome, tipoPessoa, logradouro, numero, bairro, cidade, uf, cep;
+        foreach (['nome', 'tipoPessoa', 'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep'] as $campo) {
+            if (empty($sacado[$campo])) {
+                throw new RuntimeException("createBoleto: em 'sacado', falta campo obrigatório '$campo'.");
+            }
+        }
+
+        // 2.1 Obter CPF/CNPJ do sacado: pode vir como 'cpf_cnpj' ou 'cpfCnpj'
+        $cpfCnpjRaw = $sacado['cpf_cnpj'] ?? $sacado['cpfCnpj'] ?? null;
+        if (empty($cpfCnpjRaw)) {
+            throw new RuntimeException("createBoleto: em 'sacado', falta 'cpf_cnpj' ou 'cpfCnpj'.");
+        }
+        // Normalizar: remover tudo que não for dígito
+        $cpfCnpjLimpo = preg_replace('/\D/', '', $cpfCnpjRaw);
+        if (empty($cpfCnpjLimpo)) {
+            throw new RuntimeException("createBoleto: 'cpf_cnpj' inválido após limpar caracteres não numéricos.");
+        }
+
+        // Montar endereço do sacado
+        $logradouro = trim($sacado['logradouro']);
+        $numero     = trim($sacado['numero']);
+        $enderecoStr = $logradouro . ', ' . $numero;
+        if (! empty($sacado['complemento'] ?? null)) {
+            $enderecoStr .= ' ' . trim($sacado['complemento']);
+        }
+
+        // Montar array pagador
         $pagador = [
-            'nome'    => $data['sacado']['nome'],
-            'cpfCnpj' => $data['sacado']['cpf_cnpj'],
+            'nome'      => $sacado['nome'],
+            'cpfCnpj'   => $cpfCnpjLimpo,
+            'tipoPessoa'=> $sacado['tipoPessoa'],
+            'endereco'  => $enderecoStr,
+            'bairro'    => $sacado['bairro'],
+            'cidade'    => $sacado['cidade'],
+            'uf'        => strtoupper($sacado['uf']),
+            'cep'       => $sacado['cep'],
         ];
-        if (! empty($data['sacado']['email'] ?? null)) {
-            $pagador['email'] = $data['sacado']['email'];
+        if (! empty($sacado['email'])) {
+            $pagador['email'] = $sacado['email'];
         }
-        if (! empty($data['sacado']['ddd'] ?? null)) {
-            $pagador['ddd'] = $data['sacado']['ddd'];
+        if (! empty($sacado['ddd'])) {
+            $pagador['ddd'] = $sacado['ddd'];
         }
-        if (! empty($data['sacado']['telefone'] ?? null)) {
-            $pagador['telefone'] = $data['sacado']['telefone'];
+        if (! empty($sacado['telefone'])) {
+            $pagador['telefone'] = $sacado['telefone'];
         }
-        $pagador['tipoPessoa'] = $data['sacado']['tipoPessoa'];
-        $pagador['endereco']   = $enderecoStr;
-        $pagador['bairro']     = $data['sacado']['bairro'];
-        $pagador['cidade']     = $data['sacado']['cidade'];
-        $pagador['uf']         = strtoupper($data['sacado']['uf']);
-        $pagador['cep']        = $data['sacado']['cep'];
+
+        // 3. Montar payload básico
+        // Validar nosso_numero
+        if (empty($data['nosso_numero'])) {
+            throw new RuntimeException("createBoleto: falta 'nosso_numero' em data.");
+        }
+        // Validar valor
+        if (! isset($data['valor'])) {
+            throw new RuntimeException("createBoleto: falta 'valor' em data.");
+        }
+        $valor = $data['valor'];
+        if (! is_numeric($valor)) {
+            throw new RuntimeException("createBoleto: 'valor' deve ser numérico.");
+        }
 
         $payload = [
             'seuNumero'     => (string) $data['nosso_numero'],
-            'valorNominal'  => (float) $data['valor'],
+            'valorNominal'  => (float) $valor,
             'dataVencimento'=> $dataVenc->format('Y-m-d'),
             'numDiasAgenda' => isset($data['num_dias_agenda']) ? (int)$data['num_dias_agenda'] : 0,
             'pagador'       => $pagador,
         ];
 
-        // Desconto
-        if (! empty($data['desconto']['taxa'] ?? null)
-            && ! empty($data['desconto']['codigo'] ?? null)
-            && ! empty($data['desconto']['quantidadeDias'] ?? null)
-        ) {
-            $payload['desconto'] = [
-                'taxa'           => (float) $data['desconto']['taxa'],
-                'codigo'         => $data['desconto']['codigo'],
-                'quantidadeDias' => (int) $data['desconto']['quantidadeDias'],
-            ];
+        // 4. Desconto (opcional)
+        if (! empty($data['desconto']) && is_array($data['desconto'])) {
+            $d = $data['desconto'];
+            if (isset($d['taxa'], $d['codigo'], $d['quantidadeDias'])
+                && $d['taxa'] !== '' && $d['codigo'] !== '' && $d['quantidadeDias'] !== ''
+            ) {
+                if (! is_numeric($d['taxa']) || ! is_numeric($d['quantidadeDias'])) {
+                    throw new RuntimeException("createBoleto: campos de desconto devem ser numéricos ('taxa', 'quantidadeDias').");
+                }
+                $payload['desconto'] = [
+                    'taxa'           => (float) $d['taxa'],
+                    'codigo'         => $d['codigo'],
+                    'quantidadeDias' => (int) $d['quantidadeDias'],
+                ];
+            }
         }
-        // Multa
-        if (! empty($data['multa']['taxa'] ?? null)
-            && ! empty($data['multa']['codigo'] ?? null)
-        ) {
-            $payload['multa'] = [
-                'taxa'   => (float) $data['multa']['taxa'],
-                'codigo' => $data['multa']['codigo'],
-            ];
+
+        // 5. Multa (opcional)
+        if (! empty($data['multa']) && is_array($data['multa'])) {
+            $m = $data['multa'];
+            if (isset($m['taxa'], $m['codigo'])
+                && $m['taxa'] !== '' && $m['codigo'] !== ''
+            ) {
+                if (! is_numeric($m['taxa'])) {
+                    throw new RuntimeException("createBoleto: campo multa.taxa deve ser numérico.");
+                }
+                $payload['multa'] = [
+                    'taxa'   => (float) $m['taxa'],
+                    'codigo' => $m['codigo'],
+                ];
+            }
         }
-        // Mora
-        if (! empty($data['mora']['taxa'] ?? null)
-            && ! empty($data['mora']['codigo'] ?? null)
-        ) {
-            $payload['mora'] = [
-                'taxa'   => (float) $data['mora']['taxa'],
-                'codigo' => $data['mora']['codigo'],
-            ];
+
+        // 6. Mora (opcional)
+        if (! empty($data['mora']) && is_array($data['mora'])) {
+            $mo = $data['mora'];
+            if (isset($mo['taxa'], $mo['codigo'])
+                && $mo['taxa'] !== '' && $mo['codigo'] !== ''
+            ) {
+                if (! is_numeric($mo['taxa'])) {
+                    throw new RuntimeException("createBoleto: campo mora.taxa deve ser numérico.");
+                }
+                $payload['mora'] = [
+                    'taxa'   => (float) $mo['taxa'],
+                    'codigo' => $mo['codigo'],
+                ];
+            }
         }
-        // Mensagem
+
+        // 7. Mensagem (opcional)
         if (! empty($data['mensagem']) && is_array($data['mensagem'])) {
             $msgArray = [];
             for ($i = 1; $i <= 5; $i++) {
@@ -197,33 +288,42 @@ class InterBoletoService
                 $payload['mensagem'] = $msgArray;
             }
         }
-        // Beneficiário Final
-        if (! empty($data['beneficiarioFinal'])
-            && is_array($data['beneficiarioFinal'])
-            && ! empty($data['beneficiarioFinal']['nome'] ?? null)
-            && ! empty($data['beneficiarioFinal']['cpfCnpj'] ?? null)
-            && ! empty($data['beneficiarioFinal']['tipoPessoa'] ?? null)
-            && ! empty($data['beneficiarioFinal']['logradouro'] ?? null)
-            && ! empty($data['beneficiarioFinal']['numero'] ?? null)
-            && ! empty($data['beneficiarioFinal']['bairro'] ?? null)
-            && ! empty($data['beneficiarioFinal']['cidade'] ?? null)
-            && ! empty($data['beneficiarioFinal']['uf'] ?? null)
-            && ! empty($data['beneficiarioFinal']['cep'] ?? null)
-        ) {
-            $benef = [
-                'nome'      => $data['beneficiarioFinal']['nome'],
-                'cpfCnpj'   => $data['beneficiarioFinal']['cpfCnpj'],
-                'tipoPessoa'=> $data['beneficiarioFinal']['tipoPessoa'],
-                'endereco'  => trim($data['beneficiarioFinal']['logradouro']) . ', ' . trim($data['beneficiarioFinal']['numero']),
-                'bairro'    => $data['beneficiarioFinal']['bairro'],
-                'cidade'    => $data['beneficiarioFinal']['cidade'],
-                'uf'        => strtoupper($data['beneficiarioFinal']['uf']),
-                'cep'       => $data['beneficiarioFinal']['cep'],
-            ];
-            if (! empty($data['beneficiarioFinal']['complemento'] ?? null)) {
-                $benef['endereco'] .= ' ' . $data['beneficiarioFinal']['complemento'];
+
+        // 8. Beneficiário Final (opcional)
+        if (! empty($data['beneficiarioFinal']) && is_array($data['beneficiarioFinal'])) {
+            $bf = $data['beneficiarioFinal'];
+            $requiredBF = ['nome','cpfCnpj','tipoPessoa','logradouro','numero','bairro','cidade','uf','cep'];
+            $okBF = true;
+            foreach ($requiredBF as $campo) {
+                if (empty($bf[$campo])) {
+                    $okBF = false;
+                    break;
+                }
             }
-            $payload['beneficiarioFinal'] = $benef;
+            if ($okBF) {
+                $cpfCnpjBF = preg_replace('/\D/', '', $bf['cpfCnpj']);
+                if (empty($cpfCnpjBF)) {
+                    throw new RuntimeException("createBoleto: beneficiarioFinal.cpfCnpj inválido após limpar caracteres.");
+                }
+                $endBF = trim($bf['logradouro']) . ', ' . trim($bf['numero']);
+                if (! empty($bf['complemento'] ?? null)) {
+                    $endBF .= ' ' . trim($bf['complemento']);
+                }
+                $payload['beneficiarioFinal'] = [
+                    'nome'      => $bf['nome'],
+                    'cpfCnpj'   => $cpfCnpjBF,
+                    'tipoPessoa'=> $bf['tipoPessoa'],
+                    'endereco'  => $endBF,
+                    'bairro'    => $bf['bairro'],
+                    'cidade'    => $bf['cidade'],
+                    'uf'        => strtoupper($bf['uf']),
+                    'cep'       => $bf['cep'],
+                ];
+            }
+            // Se não vier completo, ignora. Se quiser forçar, descomente:
+            // else {
+            //     throw new RuntimeException("createBoleto: beneficiarioFinal incompleto.");
+            // }
         }
 
         Log::info('Inter createBoleto v3 - payload POST /cobrancas', [
@@ -248,13 +348,17 @@ class InterBoletoService
 
         if (! in_array($status, [200, 201], true)) {
             $errorDetail = null;
-            try { $errorDetail = $resp->json(); } catch (\Exception $e) {}
+            try {
+                $errorDetail = $resp->json();
+            } catch (\Exception $e) {
+                $errorDetail = $bodyRaw;
+            }
             Log::error('Erro ao criar cobrança v3 Inter', [
                 'status' => $status,
-                'body'   => $errorDetail ?: $bodyRaw,
+                'body'   => $errorDetail,
                 'payload'=> $payload,
             ]);
-            throw new RuntimeException('Erro na API de Cobrança Inter v3 (POST): HTTP ' . $status . ' - ' . json_encode($errorDetail ?: $bodyRaw, JSON_UNESCAPED_UNICODE));
+            throw new RuntimeException('Erro na API de Cobrança Inter v3 (POST): HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
         }
 
         $json = $resp->json();
@@ -262,107 +366,123 @@ class InterBoletoService
             Log::error('createBoleto v3: campo codigoSolicitacao não encontrado', ['json' => $json]);
             throw new RuntimeException('Resposta de criação sem codigoSolicitacao: ' . json_encode($json, JSON_UNESCAPED_UNICODE));
         }
+
         return [
             'codigoSolicitacao' => $json['codigoSolicitacao'],
             'rawResponse'       => $json,
         ];
     }
 
-public function getCobranca(string $codigoSolicitacao): array
-{
-    $token = $this->getToken();
-    $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao);
-
-    Log::info('Inter getCobranca v3 - GET', ['url' => $url]);
-
-    $resp = Http::withToken($token)
-        ->withOptions($this->certOptions)
-        ->withHeaders([
-            'Accept' => 'application/json',
-            'x-conta-corrente' => $this->contaCorrente,
-        ])->get($url);
-
-    $status = $resp->status();
-    $bodyRaw = $resp->body();
-    Log::info('Inter getCobranca v3 - resposta GET', [
-        'status' => $status,
-        'bodyRaw' => $bodyRaw,
-    ]);
-
-    if ($status !== 200) {
-        $errorDetail = null;
-        try { $errorDetail = $resp->json(); } catch (\Exception $e) {}
-        Log::error('Erro ao consultar cobrança v3 Inter', [
-            'status' => $status,
-            'body'   => $errorDetail ?: $bodyRaw,
-        ]);
-        throw new RuntimeException('Erro na API de Cobrança Inter v3 (GET): HTTP ' . $status . ' - ' . json_encode($errorDetail ?: $bodyRaw, JSON_UNESCAPED_UNICODE));
-    }
-
-    $json = $resp->json();
-    return $json;
-}
-
-/**
- * Lista cobranças com filtros opcionais.
- *
- * @param array $filters Exemplos: ['dataInicio'=>'2025-06-01','dataFim'=>'2025-06-30','status'=>'PENDENTE']
- * @return array Lista de cobranças e metadados de paginação
- * @throws RuntimeException
- */
-public function listCobrancas(array $filters = []): array
-{
-    $token = $this->getToken();
-    $url = $this->baseResourceUrl; // e.g. https://cdpj.partners.bancointer.com.br/cobranca/v3/cobrancas
-
-    // Montar query string com nomes esperados pela API:
-    $query = [];
-    // dataInicial/dataFinal conforme a API exige:
-    if (!empty($filters['dataInicio'])) {
-        // A API espera dataInicial, no formato YYYY-MM-DD
-        $query['dataInicial'] = $filters['dataInicio'];
-    }
-    if (!empty($filters['dataFim'])) {
-        $query['dataFinal'] = $filters['dataFim'];
-    }
-    if (!empty($filters['status'])) {
-        // Verifique se a API aceita filtro status; usar a string conforme documentação, ex.: "PENDENTE"
-        $query['status'] = $filters['status'];
-    }
-    // Outros filtros conforme documentação (e.g., seuNumero etc.) podem ser adicionados aqui
-
-    Log::info('Inter listCobrancas v3 - GET', ['url'=>$url, 'query'=>$query]);
-
-    $resp = Http::withToken($token)
-        ->withOptions($this->certOptions)
-        ->withHeaders([
-            'Accept' => 'application/json',
-            'x-conta-corrente' => $this->contaCorrente,
-        ])->get($url, $query);
-
-    $status = $resp->status();
-    $bodyRaw = $resp->body();
-    Log::info('Inter listCobrancas v3 - resposta GET', [
-        'status'=>$status, 'bodyRaw'=>$bodyRaw,
-    ]);
-
-    if ($status !== 200) {
-        $errorDetail = null;
-        try { $errorDetail = $resp->json(); } catch (\Exception $e) {}
-        Log::error('Erro ao listar cobranças v3 Inter', [
-            'status'=>$status,'body'=>$errorDetail ?: $bodyRaw,
-        ]);
-        throw new RuntimeException('Erro na API de Cobrança Inter v3 (LIST): HTTP ' . $status . ' - ' . json_encode($errorDetail ?: $bodyRaw, JSON_UNESCAPED_UNICODE));
-    }
-
-    return $resp->json();
-}
-
-  public function downloadBoletoPdf(string $codigoSolicitacao): string
+    /**
+     * Consulta cobrança pela solicitação.
+     *
+     * @param string $codigoSolicitacao
+     * @return array
+     * @throws RuntimeException
+     */
+    public function getCobranca(string $codigoSolicitacao): array
     {
         $token = $this->getToken();
+        $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao);
 
-        // Montar URL do endpoint de PDF conforme doc:
+        Log::info('Inter getCobranca v3 - GET', ['url' => $url]);
+
+        $resp = Http::withToken($token)
+            ->withOptions($this->certOptions)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'x-conta-corrente' => $this->contaCorrente,
+            ])->get($url);
+
+        $status = $resp->status();
+        $bodyRaw = $resp->body();
+        Log::info('Inter getCobranca v3 - resposta GET', [
+            'status' => $status,
+            'bodyRaw' => $bodyRaw,
+        ]);
+
+        if ($status !== 200) {
+            $errorDetail = null;
+            try {
+                $errorDetail = $resp->json();
+            } catch (\Exception $e) {
+                $errorDetail = $bodyRaw;
+            }
+            Log::error('Erro ao consultar cobrança v3 Inter', [
+                'status' => $status,
+                'body'   => $errorDetail,
+            ]);
+            throw new RuntimeException('Erro na API de Cobrança Inter v3 (GET): HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
+        }
+
+        return $resp->json();
+    }
+
+    /**
+     * Lista cobranças com filtros opcionais.
+     *
+     * @param array $filters Exemplos: ['dataInicio'=>'YYYY-MM-DD','dataFim'=>'YYYY-MM-DD','status'=>'PENDENTE']
+     * @return array
+     * @throws RuntimeException
+     */
+    public function listCobrancas(array $filters = []): array
+    {
+        $token = $this->getToken();
+        $url = $this->baseResourceUrl;
+
+        $query = [];
+        if (!empty($filters['dataInicio'])) {
+            $query['dataInicial'] = $filters['dataInicio'];
+        }
+        if (!empty($filters['dataFim'])) {
+            $query['dataFinal'] = $filters['dataFim'];
+        }
+        if (!empty($filters['status'])) {
+            $query['status'] = $filters['status'];
+        }
+        // adicionar outros filtros conforme doc
+
+        Log::info('Inter listCobrancas v3 - GET', ['url'=>$url, 'query'=>$query]);
+
+        $resp = Http::withToken($token)
+            ->withOptions($this->certOptions)
+            ->withHeaders([
+                'Accept' => 'application/json',
+                'x-conta-corrente' => $this->contaCorrente,
+            ])->get($url, $query);
+
+        $status = $resp->status();
+        $bodyRaw = $resp->body();
+        Log::info('Inter listCobrancas v3 - resposta GET', [
+            'status'=>$status, 'bodyRaw'=>$bodyRaw,
+        ]);
+
+        if ($status !== 200) {
+            $errorDetail = null;
+            try {
+                $errorDetail = $resp->json();
+            } catch (\Exception $e) {
+                $errorDetail = $bodyRaw;
+            }
+            Log::error('Erro ao listar cobranças v3 Inter', [
+                'status'=>$status,'body'=>$errorDetail,
+            ]);
+            throw new RuntimeException('Erro na API de Cobrança Inter v3 (LIST): HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
+        }
+
+        return $resp->json();
+    }
+
+    /**
+     * Baixa JSON base64 do PDF do boleto.
+     *
+     * @param string $codigoSolicitacao
+     * @return string Conteúdo binário do PDF
+     * @throws RuntimeException
+     */
+    public function downloadBoletoPdf(string $codigoSolicitacao): string
+    {
+        $token = $this->getToken();
         $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao) . '/pdf';
 
         Log::info('Inter downloadBoletoPdf v3 - GET JSON Base64', ['url' => $url]);
@@ -370,21 +490,18 @@ public function listCobrancas(array $filters = []): array
         $resp = Http::withToken($token)
             ->withOptions($this->certOptions)
             ->withHeaders([
-                'Accept' => 'application/json', // doc mostra content-type application/json com campo "pdf"
+                'Accept' => 'application/json',
                 'x-conta-corrente' => $this->contaCorrente,
-            ])
-            ->get($url);
+            ])->get($url);
 
         $status = $resp->status();
         $bodyRaw = $resp->body();
-
         Log::info('Inter downloadBoletoPdf v3 - resposta GET', [
             'status'   => $status,
             'bodyRaw'  => strlen($bodyRaw) > 1000 ? substr($bodyRaw, 0, 1000).'...': $bodyRaw,
         ]);
 
         if ($status !== 200) {
-            // Tenta extrair JSON de erro
             $errorDetail = null;
             try {
                 $errorDetail = $resp->json();
@@ -399,7 +516,6 @@ public function listCobrancas(array $filters = []): array
             throw new RuntimeException('Erro ao baixar PDF do boleto: HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
         }
 
-        // Obter JSON
         try {
             $json = $resp->json();
         } catch (\Exception $e) {
@@ -412,7 +528,6 @@ public function listCobrancas(array $filters = []): array
             throw new RuntimeException('Resposta JSON não contém campo "pdf" com conteúdo Base64.');
         }
 
-        // Decodificar Base64
         $pdfBase64 = $json['pdf'];
         $pdfBinary = base64_decode($pdfBase64, true);
         if ($pdfBinary === false) {
@@ -423,12 +538,16 @@ public function listCobrancas(array $filters = []): array
         return $pdfBinary;
     }
 
-
-
-     public function getBoletoPdf(string $codigoSolicitacao): string
+    /**
+     * Retorna diretamente o Base64 do PDF do boleto (campo 'pdf').
+     *
+     * @param string $codigoSolicitacao
+     * @return string Base64 do PDF
+     * @throws RuntimeException
+     */
+    public function getBoletoPdf(string $codigoSolicitacao): string
     {
         $token = $this->getToken();
-        // Montar URL: baseResourceUrl termina com '/cobrancas', adicionamos '/{codigo}/pdf'
         $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao) . '/pdf';
 
         Log::info('Inter getBoletoPdf v3 - GET', ['url' => $url]);
@@ -438,8 +557,7 @@ public function listCobrancas(array $filters = []): array
             ->withHeaders([
                 'Accept' => 'application/json',
                 'x-conta-corrente' => $this->contaCorrente,
-            ])
-            ->get($url);
+            ])->get($url);
 
         $status = $resp->status();
         $bodyRaw = $resp->body();
@@ -447,13 +565,17 @@ public function listCobrancas(array $filters = []): array
 
         if ($status !== 200) {
             $errorDetail = null;
-            try { $errorDetail = $resp->json(); } catch (\Exception $e) {}
+            try {
+                $errorDetail = $resp->json();
+            } catch (\Exception $e) {
+                $errorDetail = $bodyRaw;
+            }
             Log::error('Erro ao obter PDF da cobrança v3 Inter', [
                 'status' => $status,
-                'body'   => $errorDetail ?: $bodyRaw,
+                'body'   => $errorDetail,
                 'url'    => $url,
             ]);
-            throw new RuntimeException('Erro na API de Cobrança Inter v3 (GET PDF): HTTP ' . $status . ' - ' . json_encode($errorDetail ?: $bodyRaw, JSON_UNESCAPED_UNICODE));
+            throw new RuntimeException('Erro na API de Cobrança Inter v3 (GET PDF): HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
         }
 
         $json = $resp->json();
@@ -463,6 +585,4 @@ public function listCobrancas(array $filters = []): array
         }
         return $json['pdf'];
     }
-
-
 }

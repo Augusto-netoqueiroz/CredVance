@@ -25,6 +25,8 @@ use App\Http\Controllers\NewPasswordController;
 use App\Http\Controllers\BoletoTestController;
 use App\Http\Controllers\InterBoletoTestController;
 use App\Http\Controllers\InterWebhookController;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
  
 
 
@@ -101,6 +103,21 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/Inicio', [ClienteController::class, 'index'])->name('Inicio');
+});
+
+// Dentro do grupo de middleware 'auth' / 'verified', conforme seu projeto
+Route::middleware(['auth', 'verified'])->group(function() {
+    // Outras rotas do cliente...
+
+    // Rota para download do boleto
+    Route::get('/pagamentos/{pagamento}/download-boleto', [ClienteController::class, 'downloadBoleto'])
+        ->name('pagamentos.download-boleto');
+
+    // Rota para AJAX data, por exemplo:
+    Route::get('/cliente/data', [ClienteController::class, 'data'])->name('cliente.data');
+    // Rota para download de contrato:
+    Route::get('/cliente/contrato/{contrato}/download', [ClienteController::class, 'downloadContrato'])
+        ->name('cliente.contrato.download');
 });
 
 Route::get('/cliente/data', [ClienteController::class, 'data'])
@@ -420,3 +437,77 @@ Route::post('/inter/boletos/download', [InterBoletoTestController::class, 'downl
         
         Route::get('/inter/boletos/{codigo}/pdf', [InterBoletoTestController::class, 'pdfView'])
     ->name('inter.boletos.pdfview');
+
+
+    Route::get('/teste-pdf-contrato', function() {
+    // Opção A: usar um contrato existente (se tiver pelo menos um no banco)
+    // $contratoReal = \App\Models\Contrato::with(['cliente','consorcio','pagamentos'])->first();
+    // if ($contratoReal) {
+    //     $frameBase64 = null;
+    //     $path = public_path('assets/img/moldura-contrato.jpg');
+    //     if (file_exists($path)) {
+    //         $type = pathinfo($path, PATHINFO_EXTENSION);
+    //         $data = @file_get_contents($path);
+    //         if ($data !== false) {
+    //             $frameBase64 = 'data:image/'.$type.';base64,'.base64_encode($data);
+    //         }
+    //     }
+    //     $pdf = Pdf::loadView('pdf.contrato', [
+    //         'contrato'    => $contratoReal,
+    //         'pagamentos'  => $contratoReal->pagamentos()->orderBy('vencimento')->get(),
+    //         'frameBase64' => $frameBase64,
+    //     ]);
+    //     return $pdf->stream('teste_contrato_real.pdf');
+    // }
+
+    // Opção B: criar um objeto “fake” em memória:
+    $clienteFake = new \stdClass();
+    $clienteFake->name = 'Cliente Teste';
+    $clienteFake->cpf = '000.000.000-00';
+    // Se a view acessa campos adicionais (logradouro, etc.), você pode definir como vazio ou dummy:
+    // $clienteFake->logradouro = 'Rua X'; ...
+
+    $consorcioFake = new \stdClass();
+    $consorcioFake->plano = 'Plano Teste';
+    $consorcioFake->prazo = 12;
+    // definir outros campos necessários se a view os utilizar
+
+    $contratoFake = new \stdClass();
+    $contratoFake->id = 123;
+    $contratoFake->aceito_em = Carbon::now()->toDateTimeString();
+    $contratoFake->ip = '127.0.0.1';
+    $contratoFake->cliente = $clienteFake;
+    $contratoFake->consorcio = $consorcioFake;
+    $contratoFake->quantidade_cotas = 1;
+    // Caso seja acessado $contrato->latitude, longitude, etc., defina também:
+    // $contratoFake->latitude = '...'; $contratoFake->longitude = '...';
+
+    // Pagamentos: se a view não itera pagamentos, passe empty collection; 
+    // se iterar, crie uma Collection com objetos que satisfaçam o loop:
+    $pagamentosFake = collect();
+    // Exemplo de adicionar um pagamento fake:
+    // $pag1 = new \stdClass();
+    // $pag1->vencimento = Carbon::now()->addMonth();
+    // $pag1->valor = 100;
+    // $pag1->status = 'pendente';
+    // $pagamentosFake->push($pag1);
+
+    // Monta frameBase64
+    $frameBase64 = null;
+    $path = public_path('assets/img/moldura-contrato.jpg');
+    if (file_exists($path)) {
+        $type = pathinfo($path, PATHINFO_EXTENSION);
+        $data = @file_get_contents($path);
+        if ($data !== false) {
+            $frameBase64 = 'data:image/'.$type.';base64,'.base64_encode($data);
+        }
+    }
+
+    $pdf = Pdf::loadView('pdf.contrato', [
+        'contrato'    => $contratoFake,
+        'pagamentos'  => $pagamentosFake,
+        'frameBase64' => $frameBase64,
+    ]);
+    // Exibe no navegador:
+    return $pdf->stream('teste_contrato_fake.pdf');
+});

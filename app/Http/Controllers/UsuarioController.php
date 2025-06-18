@@ -88,32 +88,49 @@ class UsuarioController extends Controller
     }
 
     // Registro de atividade para atualização de usuário
-    public function update(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
+   public function update(Request $request, $id)
+{
+    $user = User::findOrFail($id);
 
-        // Validação
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $id,
-            'role' => 'required|in:cliente,admin',
-        ]);
+    // Validação dos campos, incluindo endereço e telefone
+    $request->validate([
+        'name'        => 'required|string|max:255',
+        'email'       => 'required|email|unique:users,email,' . $id,
+        'role'        => 'required|in:cliente,admin,usuario',
+        'telefone'    => 'nullable|string|max:20',
+        'logradouro'  => 'required|string|max:255',
+        'numero'      => 'required|string|max:255',
+        'complemento' => 'nullable|string|max:255',
+        'bairro'      => 'required|string|max:255',
+        'cidade'      => 'required|string|max:255',
+        'uf'          => 'required|string|max:2',
+        'cep'         => 'required|string|max:20',
+    ]);
 
-        // Atualiza os dados
-        $user->update([
-            'name' => $request->name,
-            'email' => $request->email,
-            'role' => $request->role,
-        ]);
+    // Atualiza os dados do usuário, incluindo endereço
+    $user->update([
+        'name'        => $request->name,
+        'email'       => $request->email,
+        'role'        => $request->role,
+        'telefone'    => $request->telefone,
+        'logradouro'  => $request->logradouro,
+        'numero'      => $request->numero,
+        'complemento' => $request->complemento,
+        'bairro'      => $request->bairro,
+        'cidade'      => $request->cidade,
+        'uf'          => strtoupper($request->uf),
+        'cep'         => $request->cep,
+    ]);
 
-        // Log de atividade
-        ActivityLoggerService::registrar(
-            'Usuários',
-            'Atualizou o usuário com ID ' . $user->id . ' para o novo nome ' . $user->name
-        );
+    // Log de atividade
+    ActivityLoggerService::registrar(
+        'Usuários',
+        'Atualizou o usuário com ID ' . $user->id . ' para o novo nome ' . $user->name
+    );
 
-        return redirect()->route('usuarios.index')->with('success', 'Usuário atualizado com sucesso!');
-    }
+    return redirect()->route('Inicio')->with('success', 'Usuário atualizado com sucesso!');
+}
+
 
     // Registro de atividade para deletar (desabilitar) usuário
     public function delete($id)
