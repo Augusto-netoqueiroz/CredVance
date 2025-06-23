@@ -27,6 +27,7 @@ class Kernel extends ConsoleKernel
     // roda, por exemplo, a cada hora:
     $schedule->command('pagamentos:atualizar-status')->hourly();
     $schedule->command('pagamentos:download-boletos')->everyMinute();
+    $schedule->job(new \App\Jobs\CheckOverduePaymentsJob())->dailyAt('08:00');
     
 }
 }

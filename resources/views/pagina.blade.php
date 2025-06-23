@@ -2,16 +2,33 @@
 <html lang="pt-BR">
 
 <head>
+
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
   <title>Consórcio - Cred Vance</title>
-  <meta name="description" content="">
-  <meta name="keywords" content="">
+  <meta name="description" content="Simule, contrate e gerencie seu consórcio online com praticidade, segurança e planos flexíveis. Parcelas a partir de R$ 155,00. Sem taxa de adesão!">
+  <meta name="keywords" content="consórcio, consórcio online, consórcio fácil, credvance, simulação de consórcio, parcelamento, investimento">
 
-  <!-- Favicons -->
-  <link href="assets/img/favicon.png" rel="icon">
-  <link href="assets/img/apple-touch-icon.png" rel="apple-touch-icon">
+  <!-- Favicons (URL Absoluta para o Google) -->
+  <link rel="icon" href="https://meucredvance.com.br/favicon.ico" type="image/x-icon">
+  <link rel="icon" type="image/png" href="https://meucredvance.com.br/assets/img/favicon.png">
+  <link rel="apple-touch-icon" href="https://meucredvance.com.br/assets/img/apple-touch-icon.png">
+  <meta name="msapplication-TileImage" content="https://meucredvance.com.br/assets/img/favicon.png">
+
+  <!-- Open Graph (para preview em redes sociais) -->
+  <meta property="og:title" content="Consórcio - Cred Vance">
+  <meta property="og:description" content="Simule, contrate e gerencie seu consórcio online com praticidade, segurança e planos flexíveis. Parcelas a partir de R$ 155,00. Sem taxa de adesão!">
+  <meta property="og:image" content="https://meucredvance.com.br/images/og-image.jpg"> 
+  <meta property="og:url" content="https://meucredvance.com.br/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="CredVance">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Consórcio - Cred Vance">
+  <meta name="twitter:description" content="Simule, contrate e gerencie seu consórcio online com praticidade, segurança e planos flexíveis. Parcelas a partir de R$ 155,00. Sem taxa de adesão!">
+  <meta name="twitter:image" content="https://meucredvance.com.br/images/og-image.jpg">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -19,14 +36,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&family=Raleway:wght@100;200;300;400;500;600;700;800;900&family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
   <!-- Vendor CSS Files -->
-  <link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
-  <link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
-  <link href="assets/vendor/aos/aos.css" rel="stylesheet">
-  <link href="assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
-  <link href="assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
+  <link href="https://meucredvance.com.br/assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://meucredvance.com.br/assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://meucredvance.com.br/assets/vendor/aos/aos.css" rel="stylesheet">
+  <link href="https://meucredvance.com.br/assets/vendor/glightbox/css/glightbox.min.css" rel="stylesheet">
+  <link href="https://meucredvance.com.br/assets/vendor/swiper/swiper-bundle.min.css" rel="stylesheet">
 
-  <!-- Main CSS File (com paleta azul/branco) -->
-  <link href="assets/css/main.css" rel="stylesheet">
+  <!-- Main CSS File -->
+  <link href="https://meucredvance.com.br/assets/css/main.css" rel="stylesheet">
+
+</head>
 
   <!-- ***********************
        Botão flutuante "Cadastre-se Agora!"
