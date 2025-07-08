@@ -3,6 +3,10 @@
     <form method="POST" action="{{ route('register') }}">
         @csrf
 
+           @if(request()->has('ref'))
+                <input type="hidden" name="parceiro_id" value="{{ request()->get('ref') }}">
+            @endif
+
         {{-- Name --}}
         <div>
             <x-input-label for="name" :value="__('Nome')" />

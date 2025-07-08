@@ -6,8 +6,10 @@ use App\Models\Pagamento;
 use App\Models\Contrato;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\ActivityLoggerService;
 
 class ClienteController extends Controller
 {
@@ -23,41 +25,58 @@ class ClienteController extends Controller
     /**
      * Retorna JSON para alimentar a dashboard do cliente via AJAX.
      */
-   public function data(): JsonResponse
+public function data(): JsonResponse
 {
     $user = Auth::user();
 
-    // Buscar pagamentos do cliente, selecionando também o campo 'boleto_path'
+    // Buscar pagamentos do cliente, incluindo boleto_path e pix
     $pagamentosRaw = Pagamento::whereHas('contrato', function($q) use ($user) {
             $q->where('cliente_id', $user->id);
         })
         ->orderBy('vencimento')
-        ->get(['id', 'vencimento', 'valor', 'status', 'boleto_path']);
+        ->get(['id', 'vencimento', 'valor', 'status', 'boleto_path', 'pix']);
 
     $pagamentos = $pagamentosRaw->map(function($p) {
         $url = null;
+
         if ($p->boleto_path) {
-            // Verifica existência em storage/app/private/boletos via disco 'boletos'
-            if (Storage::disk('boletos')->exists($p->boleto_path)) {
-                // Rota de download: ajuste o nome se necessário
+            $originalPath = $p->boleto_path;
+
+            // Tenta remover 'boletos/' do início (para compatibilidade com o disco)
+            $relativePath = preg_replace('#^boletos/#', '', $originalPath);
+
+            $found = false;
+
+            // Primeira tentativa: usando o path relativo
+            if (Storage::disk('boletos')->exists($relativePath)) {
+                $found = true;
+            }
+            // Fallback: tenta com o caminho completo original
+            elseif (Storage::disk('boletos')->exists($originalPath)) {
+                $relativePath = $originalPath;
+                $found = true;
+            }
+
+            if ($found) {
                 $url = route('pagamentos.download-boleto', ['pagamento' => $p->id]);
             } else {
-                // Log de aviso: não encontrou no disco boletos
-                Log::warning("ClienteController@data: boleto não encontrado em disk 'boletos': '{$p->boleto_path}'");
+                Log::warning("ClienteController@data: boleto não encontrado em disk 'boletos': '{$originalPath}'");
             }
         }
+
         return [
             'id'         => $p->id,
             'vencimento' => is_object($p->vencimento)
-                            ? $p->vencimento->format('d/m/Y')
-                            : $p->vencimento,
+                                ? $p->vencimento->format('d/m/Y')
+                                : $p->vencimento,
             'valor'      => number_format($p->valor, 2, ',', '.'),
             'status'     => $p->status,
             'boleto_url' => $url,
+            'pix'        => $p->pix,
         ];
     });
 
-    // Contratos com PDF de contrato (mantém conforme antes)
+    // Contratos com PDF de contrato
     $contratos = Contrato::where('cliente_id', $user->id)
         ->whereNotNull('pdf_contrato')
         ->orderByDesc('id')
@@ -71,7 +90,6 @@ class ClienteController extends Controller
         ];
     });
 
-    // Indicadores de parcelas abertas e pagas
     $parcela_aberto  = $pagamentosRaw->where('status', 'pendente')->count();
     $parcela_paga    = $pagamentosRaw->where('status', 'pago')->count();
     $proxima_raw     = $pagamentosRaw->firstWhere('status', 'pendente');
@@ -84,7 +102,6 @@ class ClienteController extends Controller
                            ]
                          : null;
 
-    // Busca status do consórcio direto no contrato mais recente do usuário
     $status_consorcio = Contrato::where('cliente_id', $user->id)
         ->orderByDesc('id')
         ->value('status');
@@ -98,6 +115,9 @@ class ClienteController extends Controller
         'documentos'       => $documentos,
     ]);
 }
+
+
+
 
 
     /**
@@ -159,5 +179,22 @@ class ClienteController extends Controller
     }
 
     
+
+   public function logActivity(Request $request)
+{
+    $user = auth()->user(); // Pega o usuário autenticado, se quiser usar em outras situações
+    $type = $request->input('type');
+    $pagamentoId = $request->input('pagamento_id');
+
+    ActivityLoggerService::registrar(
+        'Área do Cliente',
+        $type === 'copiou_pix'
+            ? "Copiou o código Pix do pagamento #$pagamentoId"
+            : "Baixou o boleto do pagamento #$pagamentoId"
+    );
+
+    return response()->json(['ok' => true]);
+}
+
 
 }

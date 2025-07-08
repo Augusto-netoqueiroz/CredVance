@@ -5,7 +5,7 @@
             Área do Cliente
         </h2>
     </x-slot>
-
+<meta name="csrf-token" content="{{ csrf_token() }}">
     @if(session('success'))
     <div 
         x-data="{ open: true }"
@@ -25,8 +25,6 @@
     </div>
     @endif
 
-
-
     @if(session('error'))
     <div 
         x-data="{ open: true }"
@@ -44,9 +42,7 @@
             </button>
         </div>
     </div>
-@endif
-
-    
+    @endif
 
     <div class="py-10 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
         <div class="max-w-7xl mx-auto">
@@ -123,12 +119,13 @@
                                 <th class="px-4 py-3">Vencimento</th>
                                 <th class="px-4 py-3">Valor</th>
                                 <th class="px-4 py-3">Status</th>
-                                <th class="px-4 py-3">Ação</th>
+                                <th class="px-4 py-3">Pix</th>
+                                <th class="px-4 py-3">Boleto</th>
                             </tr>
                         </thead>
                         <tbody id="pagamentos_table" class="divide-y divide-gray-200 dark:divide-gray-700">
                             <tr>
-                                <td colspan="4" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+                                <td colspan="5" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
                                     Carregando...
                                 </td>
                             </tr>
@@ -144,7 +141,6 @@
                     <li class="text-gray-500 dark:text-gray-400">Carregando documentos...</li>
                 </ul>
             </div>
-
         </div>
     </div>
 
@@ -180,10 +176,12 @@
     document.addEventListener('DOMContentLoaded', () => {
         if (window.lucide) lucide.createIcons();
 
+        // Modal open/close
         const modal = document.getElementById('newAccountModal');
         document.getElementById('btnOpenModal').addEventListener('click', () => modal.classList.remove('hidden'));
         document.getElementById('btnCloseModal').addEventListener('click', () => modal.classList.add('hidden'));
 
+        // Fetch dados do cliente e renderiza
         fetch("{{ route('cliente.data') }}")
             .then(res => {
                 if (!res.ok) throw new Error(`Status ${res.status}`);
@@ -203,15 +201,37 @@
                 const tbody = document.getElementById('pagamentos_table');
                 tbody.innerHTML = '';
                 if (!data.pagamentos.length) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Nenhuma fatura localizada.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="5" class="px-4 py-3 text-center text-gray-500 dark:text-gray-400">Nenhuma fatura localizada.</td></tr>`;
                     return;
                 }
                 data.pagamentos.forEach(f => {
                     const tr = document.createElement('tr');
                     tr.className = 'bg-white dark:bg-gray-800';
-                    const acao = f.boleto_url
-                        ? `<a href="${f.boleto_url}" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200">Ver</a>`
-                        : '';
+
+                    // Botão Pix
+                    let btnPix = '';
+                    if (f.pix && typeof f.pix === "string" && f.pix.trim() !== "") {
+                        btnPix = `<button
+                            class="btn-copiar-pix inline-flex items-center gap-2 px-2 py-1 text-xs rounded bg-blue-600 hover:bg-blue-700 text-white transition"
+                            data-pix="${f.pix.trim()}"
+                            data-id="${f.id}"
+                            title="Copiar código Pix"
+                        >
+                            <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                            Copiar Pix
+                        </button>`;
+                    }
+
+                    // Botão Baixar Boleto
+                    let acao = '';
+                    if (f.boleto_url) {
+                        acao = `<a href="${f.boleto_url}" target="_blank"
+                            class="btn-baixar-boleto text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200 mr-2"
+                            data-id="${f.id}"
+                            download
+                        >Baixar Boleto</a>`;
+                    }
+
                     tr.innerHTML =
                         `<td class="px-4 py-3">${f.vencimento}</td>` +
                         `<td class="px-4 py-3">R$ ${f.valor}</td>` +
@@ -220,7 +240,9 @@
                                 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
                                 : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
                         }">${f.status.charAt(0).toUpperCase() + f.status.slice(1)}</span></td>` +
-                        `<td class="px-4 py-3">${acao}</td>`;
+                        `<td class="px-4 py-3">${btnPix}</td>` +
+                        `<td class="px-4 py-3 flex gap-2">${acao}</td>`;
+
                     tbody.appendChild(tr);
                 });
 
@@ -245,6 +267,73 @@
                 }
             })
             .catch(err => console.error('Fetch error:', err));
+
+        // COPIAR PIX e LOG
+        document.getElementById('pagamentos_table').addEventListener('click', function(e) {
+    // PIX
+    const btnPix = e.target.closest('.btn-copiar-pix');
+    if (btnPix) {
+        const pixCode = btnPix.getAttribute('data-pix');
+        const pagamentoId = btnPix.getAttribute('data-id');
+        if (!pixCode) return;
+        navigator.clipboard.writeText(pixCode).then(() => {
+            btnPix.textContent = 'Copiado!';
+            setTimeout(() => {
+                btnPix.innerHTML = `
+                    <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+                    Copiar Pix
+                `;
+            }, 1200);
+            // LOG copiar Pix
+            fetch('{{ route('cliente.log-activity') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    type: 'copiou_pix',
+                    pagamento_id: pagamentoId
+                })
+            })
+            .then(r => r.json())
+            .then(d => console.log('Log Pix:', d))
+            .catch(err => console.error('Erro log Pix:', err));
+        });
+        return;
+    }
+    // BAIXAR BOLETO
+    const btnBoleto = e.target.closest('.btn-baixar-boleto');
+    if (btnBoleto) {
+        const pagamentoId = btnBoleto.getAttribute('data-id');
+        // Impede navegação imediata
+        e.preventDefault();
+        // Loga primeiro
+        fetch('{{ route('cliente.log-activity') }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                type: 'baixou_boleto',
+                pagamento_id: pagamentoId
+            })
+        })
+        .then(r => r.json())
+        .then(d => {
+            console.log('Log Boleto:', d);
+            // Agora libera o download
+            window.open(btnBoleto.href, '_blank');
+        })
+        .catch(err => {
+            console.error('Erro log Boleto:', err);
+            window.open(btnBoleto.href, '_blank'); // Ainda libera o download mesmo se falhar
+        });
+        return false;
+    }
+});
+
     });
     </script>
 </x-app-layout>

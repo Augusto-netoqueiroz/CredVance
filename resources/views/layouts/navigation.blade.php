@@ -12,24 +12,38 @@
 
                 <!-- Menus Esquerda (versão desktop) -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                    <!-- Link comum a todos os perfis -->
-                    <x-nav-link :href="route('Inicio')" :active="request()->routeIs('Inicio')">
-                        {{ __('Início') }}
-                    </x-nav-link>
+    <!-- Link comum -->
+    <x-nav-link :href="route('Inicio')" :active="request()->routeIs('Inicio')">
+        {{ __('Início') }}
+    </x-nav-link>
 
-                    <!-- Só mostra se for admin -->
-                    @if (auth()->check() && auth()->user()->role === 'admin')
-                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                            {{ __('Dashboard') }}
-                        </x-nav-link>
-                        <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
-                            {{ __('Usuários') }}
-                        </x-nav-link>
-                         <x-nav-link :href="route('activity_logs.index')" :active="request()->routeIs('activity_logs.index')">
-                            {{ __('Logs') }}
-                        </x-nav-link>
-                    @endif
-                </div>
+    <!-- Admin -->
+    @if (auth()->check() && auth()->user()->role === 'admin')
+        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+            {{ __('Dashboard') }}
+        </x-nav-link>
+        <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
+            {{ __('Usuários') }}
+        </x-nav-link>
+        <x-nav-link :href="route('logs.index')" :active="request()->routeIs('logs.index')">
+            {{ __('Logs') }}
+        </x-nav-link>
+    @endif
+
+    <!-- Parceiros (admin ou parceiro) -->
+    @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'parceiro']))
+        @if (auth()->user()->role === 'admin')
+            <x-nav-link :href="route('admin.parceiros.index')" :active="request()->routeIs('admin.parceiros.*')">
+                {{ __('Parceiros') }}
+            </x-nav-link>
+        @else
+            <x-nav-link :href="route('parceiro.index')" :active="request()->routeIs('parceiro.index')">
+                {{ __('Parceiros') }}
+            </x-nav-link>
+        @endif
+    @endif
+</div>
+
             </div>
 
             <!-- Lado Direito (Perfil e Dropdown) - versão desktop -->

@@ -380,43 +380,54 @@ class InterBoletoService
      * @return array
      * @throws RuntimeException
      */
-    public function getCobranca(string $codigoSolicitacao): array
-    {
-        $token = $this->getToken();
-        $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao);
+   /**
+ * Consulta uma cobrança no Banco Inter.
+ * Retorna array com todos os dados, incluindo cobranca['nossoNumero'].
+ *
+ * @param string $codigoSolicitacao
+ * @return array
+ * @throws RuntimeException
+ */
+public function getCobranca(string $codigoSolicitacao): array
+{
+    $token = $this->getToken();
+    $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao);
 
-        Log::info('Inter getCobranca v3 - GET', ['url' => $url]);
+    Log::info('Inter getCobranca v3 - GET', ['url' => $url]);
 
-        $resp = Http::withToken($token)
-            ->withOptions($this->certOptions)
-            ->withHeaders([
-                'Accept' => 'application/json',
-                'x-conta-corrente' => $this->contaCorrente,
-            ])->get($url);
+    $resp = \Http::withToken($token)
+        ->withOptions($this->certOptions)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'x-conta-corrente' => $this->contaCorrente,
+        ])
+        ->get($url);
 
-        $status = $resp->status();
-        $bodyRaw = $resp->body();
-        Log::info('Inter getCobranca v3 - resposta GET', [
-            'status' => $status,
-            'bodyRaw' => $bodyRaw,
-        ]);
+    $status = $resp->status();
+    $bodyRaw = $resp->body();
+    Log::info('Inter getCobranca v3 - resposta GET', [
+        'status' => $status,
+        'bodyRaw' => $bodyRaw,
+    ]);
 
-        if ($status !== 200) {
-            $errorDetail = null;
-            try {
-                $errorDetail = $resp->json();
-            } catch (\Exception $e) {
-                $errorDetail = $bodyRaw;
-            }
-            Log::error('Erro ao consultar cobrança v3 Inter', [
-                'status' => $status,
-                'body'   => $errorDetail,
-            ]);
-            throw new RuntimeException('Erro na API de Cobrança Inter v3 (GET): HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
+    if ($status !== 200) {
+        $errorDetail = null;
+        try {
+            $errorDetail = $resp->json();
+        } catch (\Exception $e) {
+            $errorDetail = $bodyRaw;
         }
-
-        return $resp->json();
+        Log::error('Erro ao consultar cobrança v3 Inter', [
+            'status' => $status,
+            'body'   => $errorDetail,
+        ]);
+        throw new \RuntimeException('Erro na API de Cobrança Inter v3 (GET): HTTP ' . $status . ' - ' . json_encode($errorDetail, JSON_UNESCAPED_UNICODE));
     }
+
+    // Aqui retorna todo o array da resposta, incluindo o nossoNumero dentro de 'cobranca'
+    return $resp->json();
+}
+
 
     /**
      * Lista cobranças com filtros opcionais.
@@ -585,4 +596,76 @@ class InterBoletoService
         }
         return $json['pdf'];
     }
+
+public function cancelarBoletoPorNossoNumero(string $nossoNumero): array
+{
+    $token = $this->getToken();
+    $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($nossoNumero);
+
+    $payload = ['status' => 'CANCELADA']; // <- CORRIGIDO AQUI!
+
+    \Log::debug('[DEBUG] Endpoint de cancelamento: ' . $url);
+    \Log::debug('[DEBUG] Payload de cancelamento: ' . json_encode($payload));
+
+    $resp = \Http::withToken($token)
+        ->withOptions($this->certOptions)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'x-conta-corrente' => $this->contaCorrente,
+        ])
+        ->patch($url, $payload);
+
+    if ($resp->status() !== 200) {
+        throw new \RuntimeException('Erro ao cancelar cobrança: HTTP ' . $resp->status() . ' - ' . $resp->body());
+    }
+
+    return $resp->json();
+}
+
+
+
+
+public function getCancelEndpoint($nossoNumero)
+{
+    return rtrim($this->baseResourceUrl, '/') . '/' . $nossoNumero;
+}
+
+
+public function getBaseResourceUrl(): string
+{
+    return $this->baseResourceUrl;
+}
+
+public function cancelarBoletoPorCodigoSolicitacao(string $codigoSolicitacao, string $novaDataVencimento, $valorNominal): array
+{
+    $token = $this->getToken();
+    $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao);
+
+    $payload = [
+        'status'        => 'CANCELADA',
+        'dataVencimento'=> $novaDataVencimento,
+        'valorNominal'  => $valorNominal,
+    ];
+
+    \Log::debug('[DEBUG] PATCH endpoint: ' . $url);
+    \Log::debug('[DEBUG] PATCH payload: ' . json_encode($payload));
+
+    $resp = \Http::withToken($token)
+        ->withOptions($this->certOptions)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'x-conta-corrente' => $this->contaCorrente,
+        ])
+        ->patch($url, $payload);
+
+    if ($resp->status() !== 200) {
+        throw new \RuntimeException('Erro ao cancelar cobrança: HTTP ' . $resp->status() . ' - ' . $resp->body());
+    }
+
+    return $resp->json();
+}
+
+
+
+
 }

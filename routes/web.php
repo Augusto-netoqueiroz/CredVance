@@ -27,8 +27,11 @@ use App\Http\Controllers\InterBoletoTestController;
 use App\Http\Controllers\InterWebhookController;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
- 
-
+use App\Http\Controllers\ParceiroController;
+use App\Http\Controllers\Admin\ParceiroAdminController;
+use App\Http\Controllers\EmailController;
+use App\Http\Controllers\LogsController;
+use App\Http\Controllers\PagamentoController;
 
 
 
@@ -105,6 +108,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/Inicio', [ClienteController::class, 'index'])->name('Inicio');
 });
 
+Route::post('/cliente/log-activity', [\App\Http\Controllers\ClienteController::class, 'logActivity'])
+    ->name('cliente.log-activity')->middleware('auth');
 // Dentro do grupo de middleware 'auth' / 'verified', conforme seu projeto
 Route::middleware(['auth', 'verified'])->group(function() {
     // Outras rotas do cliente...
@@ -511,3 +516,90 @@ Route::post('/inter/boletos/download', [InterBoletoTestController::class, 'downl
     // Exibe no navegador:
     return $pdf->stream('teste_contrato_fake.pdf');
 });
+
+
+
+
+
+// PARCEIROS 
+
+
+Route::get('/parceiro/{slug}', [ParceiroController::class, 'redirect'])->name('parceiro.redirect');
+
+Route::prefix('admin/parceiros')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('/', [ParceiroAdminController::class, 'index'])->name('admin.parceiros.index');
+    Route::get('/create', [ParceiroAdminController::class, 'create'])->name('admin.parceiros.create');
+    Route::post('/store', [ParceiroAdminController::class, 'store'])->name('admin.parceiros.store');
+    Route::get('/{parceiro}/metrics', [ParceiroAdminController::class, 'metrics'])->name('admin.parceiros.metrics');
+});
+
+Route::get('dasboard/parceiro', [ParceiroController::class, 'index'])->name('parceiro.index');
+
+Route::get('/parceiro/{parceiro}/metrics', [ParceiroController::class, 'metrics'])->name('parceiro.metrics');
+
+
+
+ 
+Route::get('/emails/fila', [EmailController::class, 'index'])->name('emails.fila');
+
+
+
+
+
+Route::get('/emails/enviar-proximo', [EmailController::class, 'enviarProximoEmail'])->name('emails.enviarProximo');
+
+// Emails
+Route::get('/emails', [EmailController::class, 'listarEmails'])->name('emails.index');
+Route::get('/emails/novo', [EmailController::class, 'criarEmailForm'])->name('emails.create');
+Route::post('/emails', [EmailController::class, 'salvarEmail'])->name('emails.store');
+
+
+// Templates
+Route::get('/emails/templates', [EmailController::class, 'listarTemplates'])->name('emails.templates.index');
+Route::get('/emails/templates/novo', [EmailController::class, 'criarTemplateForm'])->name('emails.templates.create');
+Route::post('/emails/templates', [EmailController::class, 'salvarTemplate'])->name('emails.templates.store');
+Route::get('/emails/templates/{template}/editar', [EmailController::class, 'editarTemplateForm'])->name('emails.templates.edit');
+Route::put('/emails/templates/{template}', [EmailController::class, 'atualizarTemplate'])->name('emails.templates.update');
+Route::delete('/emails/templates/{template}', [EmailController::class, 'deletarTemplate'])->name('emails.templates.destroy');
+
+
+ 
+
+
+ 
+
+
+Route::get('/emails/{email}', [EmailController::class, 'mostrarEmail'])->name('emails.show');
+ 
+Route::delete('/emails/{email}', [EmailController::class, 'excluirEmail'])->name('emails.destroy');
+// Formulário para editar email
+Route::get('/emails/{email}/editar', [EmailController::class, 'editarEmailForm'])->name('emails.edit');
+
+// Atualizar email
+Route::put('/emails/{email}', [EmailController::class, 'atualizarEmail'])->name('emails.update');
+
+
+Route::get('/emails/enviar-proximo', [EmailController::class, 'enviarProximoEmail'])->name('emails.enviarProximo');
+
+
+
+Route::get('/Boleto/teste', function () {
+    return view('emails.boleto_enviado');
+});
+
+Route::get('/email-opened/{pagamentoId}', [EmailController::class, 'pixelOpened'])->name('email.opened');
+
+
+Route::get('/documentacao', function () {
+    return view('documentacao');
+});
+
+Route::get('/boleto-logs', [LogsController::class, 'index'])->name('boleto.logs.index');
+Route::get('/log/download/{pagamentoId}', [LogsController::class, 'downloadBoletolog'])->name('boleto.log.download');
+Route::get('/logs', [LogsController::class, 'index'])->name('logs.index');
+
+
+
+Route::get('pagamentos/inter', [PagamentoController::class, 'index'])->name('pagamentos.index');
+Route::get('pagamentos/{pagamento}/pix', [PagamentoController::class, 'showPix'])->name('pagamentos.pix');
+Route::get('pagamentos/{codigoSolicitacao}', [PagamentoController::class, 'show'])->name('pagamentos.show');

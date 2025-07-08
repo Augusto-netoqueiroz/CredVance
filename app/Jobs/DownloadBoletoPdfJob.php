@@ -20,7 +20,7 @@ class DownloadBoletoPdfJob implements ShouldQueue
 
     public $pagamentoId;
     public $codigoSolicitacao;
-    public $tries = 5;
+
 
     public function __construct(int $pagamentoId, string $codigoSolicitacao)
     {
@@ -33,46 +33,68 @@ class DownloadBoletoPdfJob implements ShouldQueue
         return [ new RateLimited('download-boletos-pdf') ];
     }
 
-    public function handle(InterBoletoService $service)
-    {
-        $pag = Pagamento::find($this->pagamentoId);
-        if (! $pag) {
-            Log::warning("DownloadBoletoPdfJob: Pagamento ID {$this->pagamentoId} não encontrado.");
-            return;
-        }
-        if ($pag->boleto_path) {
-            Log::info("DownloadBoletoPdfJob: já existe boleto_path para Pagamento ID {$pag->id}, pulando.");
-            return;
-        }
-        Log::info("DownloadBoletoPdfJob: tentando baixar PDF para Pagamento ID {$pag->id}, código {$this->codigoSolicitacao}");
-
-        try {
-            $pdfBinary = $service->downloadBoletoPdf($this->codigoSolicitacao);
-
-            // Salvar em storage/app/boletos/...
-            $relativePath = "boletos/{$pag->id}/boleto_{$this->codigoSolicitacao}.pdf";
-            Storage::disk('local')->put($relativePath, $pdfBinary);
-
-            $pag->boleto_path = $relativePath;
-            $pag->save();
-
-            Log::info("DownloadBoletoPdfJob: PDF salvo para Pagamento ID {$pag->id} em {$relativePath}");
-        } catch (Exception $e) {
-            $msg = $e->getMessage();
-            if (str_contains($msg, 'Não foi possível gerar o boleto PDF')) {
-                Log::warning("DownloadBoletoPdfJob: PDF não pronto para Pagamento ID {$pag->id}, reprogramando: ".$msg);
-                throw $e; // para retry/backoff
-            }
-            // Erro permanente: grava e não relança
-            $pag->error_message = "Erro download PDF: ".$msg;
-            $pag->save();
-            Log::error("DownloadBoletoPdfJob: erro permanente ao baixar PDF para Pagamento ID {$pag->id}: ".$msg);
-        }
+ public function handle(InterBoletoService $service)
+{
+    $pag = Pagamento::find($this->pagamentoId);
+    if (! $pag) {
+        Log::warning("DownloadBoletoPdfJob: Pagamento ID {$this->pagamentoId} não encontrado.");
+        return;
     }
+    if ($pag->boleto_path && file_exists(storage_path("app/{$pag->boleto_path}"))) {
+        Log::info("DownloadBoletoPdfJob: PDF já existe para Pagamento ID {$pag->id}, pulando.");
+        return;
+    }
+    Log::info("DownloadBoletoPdfJob: Baixando PDF para Pagamento ID {$pag->id}, código {$this->codigoSolicitacao}");
+
+    try {
+        $pdfBinary = $service->downloadBoletoPdf($this->codigoSolicitacao);
+
+        // Cria diretório se não existir
+        $relativePath = "boletos/{$pag->id}/boleto_{$this->codigoSolicitacao}.pdf";
+        $fullPath = storage_path("app/boletos/{$pag->id}");
+        if (!file_exists($fullPath)) {
+            mkdir($fullPath, 0775, true);
+        }
+
+        \Storage::disk('local')->put($relativePath, $pdfBinary);
+
+        // Busca Pix/linha_digitavel se ainda não tem
+        $resposta = $service->getCobranca($this->codigoSolicitacao);
+        $pixCopiaCola = $resposta['pix']['pixCopiaECola'] ?? null;
+        $linhaDigitavel = $resposta['boleto']['linhaDigitavel'] ?? null;
+
+        $mudou = false;
+        if ($pixCopiaCola && $pag->pix !== $pixCopiaCola) {
+            $pag->pix = $pixCopiaCola;
+            $mudou = true;
+        }
+        if ($linhaDigitavel && $pag->linha_digitavel !== $linhaDigitavel) {
+            $pag->linha_digitavel = $linhaDigitavel;
+            $mudou = true;
+        }
+
+        $pag->boleto_path = $relativePath;
+        $pag->tentativas = 0;
+        $pag->error_message = null;
+        $pag->save();
+
+        Log::info("DownloadBoletoPdfJob: PDF/Pix/Linha Digitavel salvo para Pagamento ID {$pag->id}");
+    } catch (Exception $e) {
+        $pag->tentativas = ($pag->tentativas ?? 0) + 1;
+        $pag->error_message = "Erro download PDF: " . $e->getMessage();
+        $pag->save();
+        Log::error("DownloadBoletoPdfJob: Erro baixar PDF para Pagamento ID {$pag->id}: ".$e->getMessage());
+
+        // Decide aqui se é caso de retry ou não
+        throw $e; // se for erro temporário
+    }
+}
+
+
 
     public function backoff()
     {
-        return [300, 600, 1200];
+        return [30, 60, 300];
     }
 
     public function failed(Exception $e)

@@ -55,6 +55,16 @@
     }
   </style>
 
+  @if($errors->any())
+  <div class="bg-red-100 text-red-700 rounded px-3 py-2 mb-3">
+      <ul class="list-disc pl-5">
+      @foreach ($errors->all() as $error)
+          <li>{{ $error }}</li>
+      @endforeach
+      </ul>
+  </div>
+@endif
+
   <div class="py-6 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
     <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
       <form id="formContrato" action="{{ route('contratos.store') }}" method="POST">
@@ -101,6 +111,20 @@
         <div class="mb-4">
           <label for="quantidade_cotas" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantidade de Cotas</label>
           <input type="number" name="quantidade_cotas" id="quantidade_cotas" class="mt-1 block w-1/3 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" value="{{ old('quantidade_cotas', 1) }}" min="1" required>
+        </div>
+
+        <div class="mb-4">
+          <label for="dia_vencimento" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            Melhor dia de vencimento
+          </label>
+          <select name="dia_vencimento" id="dia_vencimento" class="mt-1 block w-1/3 rounded-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100" required>
+            @for ($i = 1; $i <= 28; $i++)
+              <option value="{{ $i }}" {{ old('dia_vencimento', 1) == $i ? 'selected' : '' }}>{{ $i }}</option>
+            @endfor
+          </select>
+          <span class="block text-xs text-gray-500 dark:text-gray-400 mt-1">
+            O vencimento da <b>primeira parcela</b> será <b>1 dia após a contratação</b>. As próximas seguem o melhor dia escolhido.
+          </span>
         </div>
 
         <div class="text-right">
@@ -151,154 +175,198 @@
   </div>
 
   <!-- Mini Modal de Erro -->
-  <div id="miniModalErro" class="fixed inset-0 z-50 bg-black bg-opacity-30 flex items-center justify-center hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 text-center border border-red-300 dark:border-red-500">
-      <p id="miniModalErroMsg" class="text-sm text-red-700 dark:text-red-300 font-medium mb-4">Erro</p>
-      <button onclick="fecharMiniModalErro()" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 text-sm">OK</button>
-    </div>
+<div id="miniModalErro" class="fixed inset-0 flex items-center justify-center hidden"
+     style="z-index:2000;">
+  <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 text-center border border-red-300 dark:border-red-500">
+    <p id="miniModalErroMsg" class="text-sm text-red-700 dark:text-red-300 font-medium mb-4">Erro</p>
+    <button onclick="fecharMiniModalErro()" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 text-sm">OK</button>
   </div>
+</div>
 
   <!-- Scripts -->
   <script>
-    function abrirModalContrato() {
-      const isAdmin = "{{ Auth::user()->role }}" === "admin";
-      let nome, email, cpf, telefone;
 
-      if (isAdmin) {
-        const cliente = document.querySelector('#cliente_id option:checked');
-        nome     = cliente.dataset.nome;
-        email    = cliente.dataset.email;
-        cpf      = cliente.dataset.cpf;
-        telefone = cliente.dataset.telefone;
-      } else {
-        const dados = document.getElementById('cliente_dados');
-        nome     = dados.dataset.nome;
-        email    = dados.dataset.email;
-        cpf      = dados.dataset.cpf;
-        telefone = dados.dataset.telefone;
+
+    // Salva data e hora local (formato YYYY-MM-DD HH:mm:ss)
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mi = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const dataAceite = `${yyyy}-${mm}-${dd} ${hh}:${mi}:${ss}`;
+
+  // Função para limpar pontuações, traços e espaços do CPF
+  function limparCPF(cpf) {
+    return cpf.replace(/[^\d]/g, ''); // Remove tudo que não for número
+  }
+
+  function abrirModalContrato() {
+    const isAdmin = "{{ Auth::user()->role }}" === "admin";
+    let nome, email, cpf, telefone;
+
+    if (isAdmin) {
+      const cliente = document.querySelector('#cliente_id option:checked');
+      nome     = cliente.dataset.nome;
+      email    = cliente.dataset.email;
+      cpf      = cliente.dataset.cpf;
+      telefone = cliente.dataset.telefone;
+    } else {
+      const dados = document.getElementById('cliente_dados');
+      nome     = dados.dataset.nome;
+      email    = dados.dataset.email;
+      cpf      = dados.dataset.cpf;
+      telefone = dados.dataset.telefone;
+    }
+
+    // ... resto do cálculo de valores, igual ao seu original ...
+
+    const opt     = document.querySelector('#consorcio_id option:checked');
+    const prazo   = parseInt(opt.dataset.prazo, 10);
+    const vTotal  = parseFloat(opt.dataset.valorTotal);
+    const vInicio = parseFloat(opt.dataset.parcelaMensal);
+    const juros   = parseFloat(opt.dataset.juros);
+    const vFinal  = parseFloat(opt.dataset.valorFinal);
+    const qtd     = parseInt(document.getElementById('quantidade_cotas').value, 10);
+
+    let vals = [];
+    if (prazo === 12) {
+      let v = vInicio;
+      for (let i = 0; i < 12; i++) {
+        vals.push(Math.max(v, 100));
+        v = Math.max(v - 5, 100);
       }
-
-      const opt     = document.querySelector('#consorcio_id option:checked');
-      const prazo   = parseInt(opt.dataset.prazo, 10);
-      const vTotal  = parseFloat(opt.dataset.valorTotal);
-      const vInicio = parseFloat(opt.dataset.parcelaMensal);
-      const juros   = parseFloat(opt.dataset.juros);
-      const vFinal  = parseFloat(opt.dataset.valorFinal);
-      const qtd     = parseInt(document.getElementById('quantidade_cotas').value, 10);
-
-      let vals = [];
-      if (prazo === 12) {
-        let v = vInicio;
-        for (let i = 0; i < 12; i++) {
-          vals.push(Math.max(v, 100));
-          v = Math.max(v - 5, 100);
-        }
-      } else if (prazo === 24) {
-        let v = vInicio;
-        for (let i = 0; i < 24; i++) {
-          vals.push(Math.max(v, 100));
-          if ((i + 1) % 2 === 0) v = Math.max(v - 5, 100);
-        }
-      } else {
-        const base = +(vTotal / prazo).toFixed(2);
-        for (let i = 0; i < prazo; i++) vals.push(base);
+    } else if (prazo === 24) {
+      let v = vInicio;
+      for (let i = 0; i < 24; i++) {
+        vals.push(Math.max(v, 100));
+        if ((i + 1) % 2 === 0) v = Math.max(v - 5, 100);
       }
+    } else {
+      const base = +(vTotal / prazo).toFixed(2);
+      for (let i = 0; i < prazo; i++) vals.push(base);
+    }
 
-      const totalPago   = vals.reduce((a,b) => a + b, 0) * qtd;
-      const retorno     = vFinal * qtd;
-      const primeiraPar = (vals[0] * qtd).toFixed(2);
-      const ultimaPar   = (vals[vals.length - 1] * qtd).toFixed(2);
-      const venc        = new Date();
-      venc.setMonth(venc.getMonth() + 1);
-      const dia = String(venc.getDate()).padStart(2,'0');
-      const mes = String(venc.getMonth()+1).padStart(2,'0');
-      const ano = venc.getFullYear();
+    const totalPago   = vals.reduce((a,b) => a + b, 0) * qtd;
+    const retorno     = vFinal * qtd;
+    const primeiraPar = (vals[0] * qtd).toFixed(2);
+    const ultimaPar   = (vals[vals.length - 1] * qtd).toFixed(2);
 
-      const contratoHTML = `
-        <div>
-          <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
-          <div class="mb-3">
-            <p class="text-xs"><span class="font-medium">Nome:</span> ${nome}</p>
-            <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf}</p>
-            <p class="text-xs"><span class="font-medium">E-mail:</span> ${email}</p>
-            <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${opt.textContent.trim()}</p>
-            <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtd}</p>
+    const contratoHTML = `
+      <div>
+        <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
+        <div class="mb-3">
+          <p class="text-xs"><span class="font-medium">Nome:</span> ${nome}</p>
+          <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf}</p>
+          <p class="text-xs"><span class="font-medium">E-mail:</span> ${email}</p>
+          <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${opt.textContent.trim()}</p>
+          <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtd}</p>
+        </div>
+        <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
+          <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
+          <div class="grid grid-cols-2 gap-1 text-xs">
+            <p><span class="font-medium">1ª parcela:</span></p>
+            <p class="text-right">R$ ${primeiraPar}</p>
+            <p><span class="font-medium">Última parcela:</span></p>
+            <p class="text-right">R$ ${ultimaPar}</p>
+            <p><span class="font-medium">Total a pagar:</span></p>
+            <p class="text-right">R$ ${totalPago.toFixed(2)}</p>
+            <p><span class="font-medium">Valor final (com ${juros}%):</span></p>
+            <p class="text-right">R$ ${retorno.toFixed(2)}</p>
+            <p><span class="font-medium">Vencimento 1ª parcela:</span></p>
+            <p class="text-right">1 dia após a contratação</p>
           </div>
-          <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
-            <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
-            <div class="grid grid-cols-2 gap-1 text-xs">
-              <p><span class="font-medium">1ª parcela:</span></p>
-              <p class="text-right">R$ ${primeiraPar}</p>
-              <p><span class="font-medium">Última parcela:</span></p>
-              <p class="text-right">R$ ${ultimaPar}</p>
-              <p><span class="font-medium">Total a pagar:</span></p>
-              <p class="text-right">R$ ${totalPago.toFixed(2)}</p>
-              <p><span class="font-medium">Valor final (com ${juros}%):</span></p>
-              <p class="text-right">R$ ${retorno.toFixed(2)}</p>
-              <p><span class="font-medium">Vencimento 1ª parcela:</span></p>
-              <p class="text-right">${dia}/${mes}/${ano}</p>
-            </div>
-          </div>
-          <p class="text-xs font-medium text-center">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
-        </div>`;
+        </div>
+        <p class="text-xs font-medium text-center">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
+      </div>`;
 
-      document.getElementById('conteudoContrato').innerHTML = contratoHTML;
-      document.getElementById('modalContrato').classList.remove('hidden');
-      document.body.classList.add('modal-open'); // trava o scroll da página atrás
+    document.getElementById('conteudoContrato').innerHTML = contratoHTML;
+    document.getElementById('modalContrato').classList.remove('hidden');
+    document.body.classList.add('modal-open'); // trava o scroll da página atrás
+  }
+
+  function fecharModalContrato() {
+    document.getElementById('modalContrato').classList.add('hidden');
+    document.body.classList.remove('modal-open');
+  }
+
+  // Exibe modal de erro com mensagem customizada e foca no campo se indicado
+  function exibirMiniModalErro(msg, focoId = null) {
+    document.getElementById('miniModalErroMsg').innerText = msg;
+    document.getElementById('miniModalErro').classList.remove('hidden');
+    if (focoId) setTimeout(() => document.getElementById(focoId)?.focus(), 100);
+  }
+
+  function fecharMiniModalErro() {
+    document.getElementById('miniModalErro').classList.add('hidden');
+  }
+
+  // Função principal do fluxo de confirmação
+  async function confirmarContrato() {
+    let cpfDigitado = document.getElementById('cpf_confirm').value.trim();
+    let senha       = document.getElementById('senha_confirm_input').value.trim();
+    let cpfReal     = "{{ Auth::user()->cpf }}";
+
+    // Limpar CPF para comparação correta
+    cpfDigitado = limparCPF(cpfDigitado);
+    cpfReal     = limparCPF(cpfReal);
+
+    if (!cpfDigitado) {
+      return exibirMiniModalErro("Digite seu CPF para confirmar.", 'cpf_confirm');
+    }
+    if (cpfDigitado.length !== 11) {
+      return exibirMiniModalErro("CPF informado está incompleto ou incorreto. Informe os 11 dígitos.", 'cpf_confirm');
+    }
+    if (cpfDigitado !== cpfReal) {
+      return exibirMiniModalErro("O CPF digitado não confere com o seu cadastro. Verifique e tente novamente.", 'cpf_confirm');
     }
 
-    function fecharModalContrato() {
-      document.getElementById('modalContrato').classList.add('hidden');
-      document.body.classList.remove('modal-open');
+    if (!senha) {
+      return exibirMiniModalErro("Digite sua senha para confirmar.", 'senha_confirm_input');
+    }
+    if (senha.length < 4) {
+      return exibirMiniModalErro("A senha deve ter pelo menos 4 caracteres.", 'senha_confirm_input');
     }
 
-    function exibirMiniModalErro(msg, focoId = null) {
-      document.getElementById('miniModalErroMsg').innerText = msg;
-      document.getElementById('miniModalErro').classList.remove('hidden');
-      if (focoId) setTimeout(() => document.getElementById(focoId)?.focus(), 100);
-    }
+    try {
+      const res = await fetch("/verifica-senha", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
+        body: JSON.stringify({ senha })
+      });
 
-    function fecharMiniModalErro() {
-      document.getElementById('miniModalErro').classList.add('hidden');
-    }
-
-    async function confirmarContrato() {
-      const cpfDigitado = document.getElementById('cpf_confirm').value.trim();
-      const senha       = document.getElementById('senha_confirm_input').value.trim();
-      const cpfReal     = "{{ Auth::user()->cpf }}";
-
-      if (cpfDigitado !== cpfReal) return exibirMiniModalErro("CPF incorreto.", 'cpf_confirm');
-      if (!senha || senha.length < 4) return exibirMiniModalErro("Senha inválida.", 'senha_confirm_input');
-
-      try {
-        const res = await fetch("/verifica-senha", {
-          method: "POST",
-          headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': "{{ csrf_token() }}" },
-          body: JSON.stringify({ senha })
-        });
-
-        if (!res.ok) return exibirMiniModalErro("Senha incorreta.", 'senha_confirm_input');
-      } catch (e) {
-        return exibirMiniModalErro("Erro na validação da senha.");
+      if (!res.ok) {
+        return exibirMiniModalErro("Senha incorreta. Verifique sua senha de acesso.", 'senha_confirm_input');
       }
-
-      document.getElementById('navegador_info').value   = navigator.userAgent;
-      document.getElementById('resolucao_tela').value  = `${screen.width}x${screen.height}`;
-      document.getElementById('data_aceite').value     = new Date().toISOString();
-      document.getElementById('senha_confirm_hidden').value = senha;
-
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(pos => {
-          document.getElementById('latitude').value  = pos.coords.latitude;
-          document.getElementById('longitude').value = pos.coords.longitude;
-          fecharModalContrato();
-          document.getElementById('formContrato').submit();
-        }, () => {
-          exibirMiniModalErro("É necessário autorizar a localização.");
-        }, { enableHighAccuracy: true, timeout: 7000 });
-      } else {
-        exibirMiniModalErro("Navegador não suporta geolocalização.");
-      }
+    } catch (e) {
+      return exibirMiniModalErro("Erro técnico ao validar a senha. Por favor, tente novamente em instantes.");
     }
-  </script>
+
+    // Preenche informações técnicas antes de enviar
+    document.getElementById('navegador_info').value   = navigator.userAgent;
+    document.getElementById('resolucao_tela').value  = `${screen.width}x${screen.height}`;
+    document.getElementById('data_aceite').value     = dataAceite;
+    document.getElementById('senha_confirm_hidden').value = senha;
+
+    // Tenta obter localização
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('latitude').value  = pos.coords.latitude;
+        document.getElementById('longitude').value = pos.coords.longitude;
+        fecharModalContrato();
+        document.getElementById('formContrato').submit();
+      }, (error) => {
+        // Mensagem detalhada conforme erro de geolocalização
+        let msg = "É necessário autorizar o acesso à localização para prosseguir.";
+        if (error.code === 1) msg = "Permissão de localização negada. Autorize para continuar.";
+        else if (error.code === 2) msg = "Localização indisponível. Tente novamente.";
+        else if (error.code === 3) msg = "Tempo esgotado para capturar localização. Tente novamente.";
+        exibirMiniModalErro(msg);
+      }, { enableHighAccuracy: true, timeout: 7000 });
+    } else {
+      exibirMiniModalErro("Seu navegador não suporta a captura de localização.");
+    }
+  }
+</script>
 </x-app-layout>

@@ -17,7 +17,6 @@ class Pagamento extends Model
         'boleto',
         'comprovante',
         'status',
-        // Novos campos:
         'codigo_solicitacao',
         'nosso_numero',
         'status_solicitacao',
@@ -31,6 +30,7 @@ class Pagamento extends Model
         'tentativas',
         'webhook_recebido',
         'error_message',
+        'enviado_em', // NOVO
     ];
 
     // Casts para tipos nativos
@@ -39,6 +39,7 @@ class Pagamento extends Model
         'data_emissao' => 'datetime',
         'data_pagamento' => 'datetime',
         'data_cancelamento' => 'datetime',
+        'enviado_em' => 'datetime', // NOVO
         'webhook_recebido' => 'boolean',
         'tentativas' => 'integer',
     ];
@@ -49,5 +50,16 @@ class Pagamento extends Model
         return $this->belongsTo(Contrato::class);
     }
 
-    // Outros relacionamentos, escopos, etc.
+    // Helper para acessar direto o cliente do pagamento
+    public function cliente()
+    {
+        return $this->hasOneThrough(
+            User::class,      // Model destino (users)
+            Contrato::class,  // Model intermediário (contratos)
+            'id',             // Chave primária de Contrato
+            'id',             // Chave primária de User
+            'contrato_id',    // Foreign key em Pagamento
+            'cliente_id'      // Foreign key em Contrato (ajuste se o campo for diferente)
+        );
+    }
 }

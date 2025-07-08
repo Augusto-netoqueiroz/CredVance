@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 
 class PagamentoGenerator
 {
-    public function generate(Contrato $contrato): void
+public function generate(Contrato $contrato): void
 {
     $cons = $contrato->consorcio;
     $n    = (int)$cons->prazo;
@@ -18,23 +18,32 @@ class PagamentoGenerator
     $step = $n > 1 ? round(($a1 - $an)/($n-1), 2) : 0;
     $q    = (int)$contrato->quantidade_cotas;
 
-    // Começa no dia seguinte ao aceite
-    $due  = Carbon::parse($contrato->aceito_em)->addDay();
+    $diaVenc = $contrato->dia_vencimento ?? 1; // Garanta que vem preenchido!
 
-    for ($i = 1; $i <= $n; $i++) {
-        $unitValue = round($a1 - ($i - 1) * $step, 2);
+    $dataAceite = Carbon::parse($contrato->aceito_em);
+
+    for ($i = 0; $i < $n; $i++) {
+        if ($i === 0) {
+            // Primeira: 1 dia após aceite
+            $due = $dataAceite->copy()->addDay();
+        } else {
+            // Demais: mês seguinte, sempre no melhor dia
+            $base = $dataAceite->copy()->addMonth($i);
+            $ultimoDiaMes = $base->endOfMonth()->day;
+            $due = $base->copy()->day(min($diaVenc, $ultimoDiaMes));
+        }
+
+        $unitValue = round($a1 - ($i) * $step, 2);
         $pag = Pagamento::create([
             'contrato_id'=> $contrato->id,
             'vencimento' => $due->toDateString(),
             'valor'      => $unitValue * $q,
             'status'     => 'pendente',
         ]);
-        Log::info("Parcela criada ID {$pag->id}");
+        Log::info("Parcela criada ID {$pag->id} Vencimento {$due->format('d/m/Y')}");
         GerarBoletoJob::dispatch($pag->id);
-
-        // Para os próximos, sempre soma 30 dias corridos (não mês a mês, exatamente 30 dias)
-        $due->addDays(30);
     }
 }
+
 
 }

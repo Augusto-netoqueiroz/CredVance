@@ -26,10 +26,26 @@ class User extends Authenticatable
         'password',
         'role',
         'ativo',
+        'parceiro_id',
     ];
 
     public function cliente()
     {
         return $this->hasOne(Cliente::class);
+    }
+
+    public function parceiro()
+    {
+        return $this->belongsTo(Parceiro::class);
+    }
+
+    public function contratos()
+    {
+        return $this->hasMany(Contrato::class, 'cliente_id');
+    }
+
+    public function parceiroResponsavel()
+    {
+        return $this->hasOne(Parceiro::class, 'user_id');
     }
 }

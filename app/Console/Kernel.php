@@ -15,6 +15,9 @@ class Kernel extends ConsoleKernel
         $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
+        \App\Console\Commands\TesteEnvioBoleto::class;
+        \App\Console\Commands\EnviarBoletoEmail::class;
+        
     }
 
     /**
@@ -27,7 +30,12 @@ class Kernel extends ConsoleKernel
     // roda, por exemplo, a cada hora:
     $schedule->command('pagamentos:atualizar-status')->hourly();
     $schedule->command('pagamentos:download-boletos')->everyMinute();
-    $schedule->job(new \App\Jobs\CheckOverduePaymentsJob())->dailyAt('08:00');
+    $schedule->command('pagamento:reemite-boleto --all')->everyFiveMinutes();
+    $schedule->command('envioboletodiario')->cron('0 8,14,20 * * *');
+    $schedule->command('queue:retry all')->everyFiveMinutes();
+    $schedule->job(new \App\Jobs\CheckOverduePaymentsJob())->everyMinute();
+    
+    
     
 }
 }

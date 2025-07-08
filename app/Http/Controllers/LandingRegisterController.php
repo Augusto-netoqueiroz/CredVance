@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class LandingRegisterController extends Controller
 {
@@ -57,108 +58,102 @@ class LandingRegisterController extends Controller
      * Processa o registro: valida dados, cria usuário e envia e-mail de verificação.
      */
     public function submitRegister(Request $request)
-    {
-        // 1. Debug inicial (temporário): log do payload recebido
-        Log::info('DEBUG submitRegister payload:', $request->all());
+{
+    // 1. Capturar ID do parceiro (se houver)
+    $parceiroId = $request->input('parceiro_id');
 
-        // 2. Validação dos campos básicos + extras
-        $request->validate([
-            'name'                  => 'required|string|max:255',
-            'email'                 => 'required|email|unique:users,email',
-            'cpf'                   => 'required|string|size:11|unique:users,cpf',
-            'telefone'              => 'required|string|min:8',
-            'password'              => 'required|string|min:6|confirmed',
 
-            // Campos de endereço:
-            'cep'                   => ['required','regex:/^\d{5}-?\d{3}$/'],
-            'logradouro'            => ['required','string','max:255'],
-            'numero'                => ['required','string','max:50'],
-            'complemento'           => ['required','string','max:255'],
-            'bairro'                => ['required','string','max:255'],
-            'cidade'                => ['required','string','max:255'],
-            'uf'                    => ['required','string','size:2'],
-        ], [
-            'cep.regex' => 'O CEP deve estar no formato 12345-678 ou 12345678.',
-            'uf.size'   => 'A UF deve ter exatamente 2 caracteres.',
-            'password.confirmed' => 'A confirmação da senha não confere.',
-        ]);
+    // 2. Debug inicial: log do payload e parceiro
+    Log::info('DEBUG submitRegister payload:', $request->all());
+    Log::info('DEBUG parceiroId:', ['ref' => $parceiroId]);
 
-        // 3. Sanitização / formatação
-        $cpfDigits = preg_replace('/\D/', '', $request->input('cpf'));       // 11 dígitos
-        $telefoneDigits = preg_replace('/\D/', '', $request->input('telefone'));
+    // 3. Validação dos campos básicos + extras
+    $request->validate([
+        'name'        => 'required|string|max:255',
+        'email'       => 'required|email|unique:users,email',
+        'cpf'         => 'required|string|size:11|unique:users,cpf',
+        'telefone'    => 'required|string|min:8',
+        'password'    => 'required|string|min:6|confirmed',
 
-        $cepRaw = $request->input('cep');
-        $cepDigits = preg_replace('/\D/', '', $cepRaw);                     // 8 dígitos
-        // Formatar com hífen (opcional). Se preferir salvar sem hífen, use $cepDigits direto.
-        $cepFormatado = substr($cepDigits, 0, 5) . '-' . substr($cepDigits, 5, 3);
+        // Campos de endereço:
+        'cep'         => ['required','regex:/^\d{5}-?\d{3}$/'],
+        'logradouro'  => ['required','string','max:255'],
+        'numero'      => ['required','string','max:50'],
+        'complemento' => ['required','string','max:255'],
+        'bairro'      => ['required','string','max:255'],
+        'cidade'      => ['required','string','max:255'],
+        'uf'          => ['required','string','size:2'],
+    ], [
+        'cep.regex' => 'O CEP deve estar no formato 12345-678 ou 12345678.',
+        'uf.size'   => 'A UF deve ter exatamente 2 caracteres.',
+        'password.confirmed' => 'A confirmação da senha não confere.',
+    ]);
 
-        $uf = strtoupper($request->input('uf'));
-
-        // 4. (Opcional) Verificar existência de CEP via ViaCEP
-        /*
-        try {
-            $response = Http::timeout(5)->get("https://viacep.com.br/ws/{$cepDigits}/json/");
-            if ($response->failed() || isset($response->json()['erro'])) {
-                return back()
-                    ->withErrors(['cep' => 'CEP não encontrado ou inválido.'])
-                    ->withInput();
-            }
-            $dataCep = $response->json();
-            // Se desejar sobrescrever campos com dados da API:
-            // $logradouroApi = $dataCep['logradouro'] ?? null;
-            // $bairroApi     = $dataCep['bairro'] ?? null;
-            // $cidadeApi     = $dataCep['localidade'] ?? null;
-            // $ufApi         = $dataCep['uf'] ?? null;
-            // $logradouroFinal = $logradouroApi ?: $request->input('logradouro');
-            // $bairroFinal     = $bairroApi ?: $request->input('bairro');
-            // $cidadeFinal     = $cidadeApi ?: $request->input('cidade');
-            // $uf = $ufApi ?: $uf;
-        } catch (\Exception $e) {
-            Log::warning('ViaCEP indisponível: ' . $e->getMessage());
-            // Prosseguir usando input manual
+    // 4. (Opcional) Validação se parceiro existe
+    if ($parceiroId) {
+        $parceiroExists = \App\Models\Parceiro::find($parceiroId);
+        if (!$parceiroExists) {
+            return back()->withErrors(['ref' => 'Parceiro inválido.'])->withInput();
         }
-        */
-
-        // 5. Criação do usuário
-        $user = User::create([
-            'name'        => $request->input('name'),
-            'email'       => $request->input('email'),
-            'cpf'         => $cpfDigits,
-            'telefone'    => $telefoneDigits,
-            'password'    => Hash::make($request->input('password')),
-            // Endereço:
-            'cep'         => $cepFormatado,
-            'logradouro'  => $request->input('logradouro'),
-            'numero'      => $request->input('numero'),
-            'complemento' => $request->input('complemento'),
-            'bairro'      => $request->input('bairro'),
-            'cidade'      => $request->input('cidade'),
-            'uf'          => $uf,
-            'email_verified_at' => null, // se quiser deixar null até verificar
-        ]);
-
-        Log::info('DEBUG user criado:', $user->toArray());
-
-        // 6. Geração do link de verificação por e-mail
-        $verificationLink = URL::temporarySignedRoute(
-            'landing.verify', // ajuste para a rota nomeada que processa verificação
-            now()->addMinutes(15),
-            ['user' => $user->id]
-        );
-
-        // 7. Envio de e-mail
-        try {
-            Mail::to($user->email)->send(new VerificationMail($verificationLink));
-        } catch (\Exception $e) {
-            Log::error('Erro ao enviar VerificationMail: ' . $e->getMessage());
-            // Você pode decidir prosseguir ou retornar erro. Aqui, prossegue:
-        }
-
-        // 8. Redirecionar com mensagem de sucesso
-        return redirect()
-            ->route('login')
-            ->with('success', 'Cadastro realizado! Verifique seu e-mail.');
     }
+
+    // 5. Sanitização / formatação
+    $cpfDigits = preg_replace('/\D/', '', $request->input('cpf'));       
+    $telefoneDigits = preg_replace('/\D/', '', $request->input('telefone'));
+    $cepDigits = preg_replace('/\D/', '', $request->input('cep'));
+    $cepFormatado = substr($cepDigits, 0, 5) . '-' . substr($cepDigits, 5, 3);
+    $uf = strtoupper($request->input('uf'));
+
+    // 6. Criação do usuário
+    $user = User::create([
+        'name'        => $request->input('name'),
+        'email'       => $request->input('email'),
+        'cpf'         => $cpfDigits,
+        'telefone'    => $telefoneDigits,
+        'password'    => Hash::make($request->input('password')),
+        'cep'         => $cepFormatado,
+        'logradouro'  => $request->input('logradouro'),
+        'numero'      => $request->input('numero'),
+        'complemento' => $request->input('complemento'),
+        'bairro'      => $request->input('bairro'),
+        'cidade'      => $request->input('cidade'),
+        'uf'          => $uf,
+        'parceiro_id' => $parceiroId, // vínculo com parceiro
+    ]);
+
+    Log::info('DEBUG user criado:', $user->toArray());
+
+    // 7. Log de evento de cadastro (opcional)
+    if ($parceiroId) {
+        \App\Models\ParceiroAcesso::create([
+            'parceiro_id' => $parceiroId,
+            'evento' => 'cadastro',
+            'ip' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+    }
+
+    // 8. Geração do link de verificação por e-mail
+    $verificationLink = URL::temporarySignedRoute(
+        'landing.verify',
+        now()->addMinutes(15),
+        ['user' => $user->id]
+    );
+
+    // 9. Envio de e-mail
+    try {
+        Mail::to($user->email)->send(new VerificationMail($verificationLink));
+    } catch (\Exception $e) {
+        Log::error('Erro ao enviar VerificationMail: ' . $e->getMessage());
+        // Decide se bloqueia ou apenas loga o erro
+    }
+
+    // 10. Redirecionar com mensagem de sucesso
+    return redirect()
+        ->route('login')
+        ->with('success', 'Cadastro realizado! Verifique seu e-mail.');
+}
+
 
 
     /**
@@ -502,4 +497,14 @@ public function resetPasswordCustom(Request $request)
         return redirect()->route('Inicio')
                          ->with('success', 'Cadastro finalizado!');
     }
+
+    private function availableRoles()
+{
+    return [
+        'cliente'   => 'Cliente',
+        'admin'     => 'Administrador',
+        'parceiro'  => 'Parceiro',
+    ];
+}
+
 }

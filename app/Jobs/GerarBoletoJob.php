@@ -18,7 +18,6 @@ class GerarBoletoJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public $pagamentoId;
-    public $tries = 3;
 
     public function __construct(int $pagamentoId)
     {
@@ -30,18 +29,54 @@ class GerarBoletoJob implements ShouldQueue
         return [ new RateLimited('gerar-boletos') ];
     }
 
-    public function handle(InterBoletoService $service)
-    {
-        $pag = Pagamento::find($this->pagamentoId);
-        if (!$pag || $pag->codigo_solicitacao) {
-            return;
-        }
-        Log::info("GerarBoletoJob: iniciando para Pagamento ID {$pag->id}");
+public function handle(InterBoletoService $service)
+{
+    $pag = Pagamento::find($this->pagamentoId);
+    if (!$pag || $pag->codigo_solicitacao) {
+        Log::warning("GerarBoletoJob: Pagamento inexistente ou já processado (id: {$this->pagamentoId}).");
+        return;
+    }
 
-        // Monta payload (verificações de endereço assumidas feitas antes)
-        $nossoNumero = 100 + $pag->id;
-        $cliente = $pag->contrato->cliente;
-        $sacado = [
+    // Validando relacionamento com contrato/cliente
+    $contrato = $pag->contrato;
+    $cliente = $contrato ? $contrato->cliente : null;
+    if (!$cliente) {
+        $msg = "Cliente não encontrado para Pagamento ID {$pag->id}";
+        $pag->error_message = $msg;
+        $pag->save();
+        Log::error($msg);
+        return;
+    }
+
+    // Validação do CEP e dados básicos
+    $cepLimpo = preg_replace('/\D/', '', $cliente->cep);
+    if(strlen($cepLimpo) !== 8) {
+        $msg = "CEP inválido: original [{$cliente->cep}] | filtrado [{$cepLimpo}] | cliente_id [{$cliente->id}]";
+        $pag->error_message = $msg;
+        $pag->tentativas = ($pag->tentativas ?? 0) + 1;
+        $pag->save();
+        Log::error($msg);
+        return;
+    }
+
+    // Gera o nosso_numero de forma menos "previsível" se possível
+    $nossoNumero = 'NP' . str_pad($pag->id, 8, '0', STR_PAD_LEFT); // Exemplo mais seguro
+
+    // Garante valor válido
+    $valor = (float) $pag->valor;
+    if ($valor <= 0) {
+        $pag->error_message = "Valor inválido para gerar boleto.";
+        $pag->tentativas = ($pag->tentativas ?? 0) + 1;
+        $pag->save();
+        Log::error("GerarBoletoJob: valor zero/negativo Pagamento ID {$pag->id}");
+        return;
+    }
+
+    $payload = [
+        'nosso_numero'    => (string)$nossoNumero,
+        'valor'           => $valor,
+        'data_vencimento' => $pag->vencimento->format('Y-m-d'),
+        'sacado'          => [
             'nome'       => $cliente->name,
             'cpfCnpj'    => $cliente->cpf,
             'tipoPessoa' => strlen($cliente->cpf) === 11 ? 'FISICA' : 'JURIDICA',
@@ -50,55 +85,62 @@ class GerarBoletoJob implements ShouldQueue
             'bairro'     => $cliente->bairro,
             'cidade'     => $cliente->cidade,
             'uf'         => $cliente->uf,
-            'cep'        => $cliente->cep,
-        ];
-        $payload = [
-            'nosso_numero'    => (string)$nossoNumero,
-            'valor'           => (float)$pag->valor,
-            'data_vencimento' => $pag->vencimento->format('Y-m-d'),
-            'sacado'          => $sacado,
-        ];
+            'cep'        => $cepLimpo,
+        ],
+    ];
 
-        try {
-            $res = $service->createBoleto($payload);
-        } catch (Exception $e) {
-            $pag->tentativas = ($pag->tentativas ?? 0) + 1;
-            $pag->error_message = $e->getMessage();
-            $pag->save();
-            Log::error("GerarBoletoJob: erro createBoleto Pagamento ID {$pag->id}: ".$e->getMessage());
-            throw $e;
-        }
-
-        // Processa retorno de createBoleto
-        try {
-            $codigo = $res['codigoSolicitacao'];
-            $pag->codigo_solicitacao   = $codigo;
-            $pag->nosso_numero         = (string)$nossoNumero;
-            $pag->status_solicitacao   = $res['status'] ?? 'PENDENTE';
-            $pag->data_emissao         = isset($res['dataEmissao'])
-                                          ? Carbon::parse($res['dataEmissao'])
-                                          : now();
-            if (!empty($res['linhaDigitavel'])) {
-                $pag->linha_digitavel = $res['linhaDigitavel'];
-            }
-            $pag->json_resposta = json_encode($res);
-            $pag->save();
-
-            Log::info("GerarBoletoJob: sucesso createBoleto Pagamento ID {$pag->id}, codigo {$codigo}");
-
-            // Agendar job para tentativa de download do PDF após atraso
-            // Por exemplo, após 5 minutos:
-            \App\Jobs\DownloadBoletoPdfJob::dispatch($pag->id, $codigo)
-                ->delay(now()->addMinutes(5));
-
-        } catch (Exception $e) {
-            $pag->tentativas++;
-            $pag->error_message = "Erro pós-create: ".$e->getMessage();
-            $pag->save();
-            Log::error("GerarBoletoJob: erro salvar dados pós-create Pagamento ID {$pag->id}: ".$e->getMessage());
-            throw $e;
-        }
+    try {
+        $res = $service->createBoleto($payload);
+    } catch (Exception $e) {
+        $pag->tentativas = ($pag->tentativas ?? 0) + 1;
+        $pag->error_message = $e->getMessage();
+        $pag->save();
+        Log::error("GerarBoletoJob: erro ao criar boleto para Pagamento ID {$pag->id}: ".$e->getMessage());
+        return;
     }
+
+    try {
+        $codigo = $res['codigoSolicitacao'] ?? null;
+        if (!$codigo) {
+            $msg = "API não retornou codigoSolicitacao. Resposta: " . json_encode($res);
+            $pag->tentativas = ($pag->tentativas ?? 0) + 1;
+            $pag->error_message = $msg;
+            $pag->save();
+            Log::error("GerarBoletoJob: " . $msg);
+            return;
+        }
+        $pag->codigo_solicitacao   = $codigo;
+        $pag->nosso_numero         = (string)$nossoNumero;
+        $pag->status_solicitacao   = $res['status'] ?? 'PENDENTE';
+        $pag->data_emissao         = isset($res['dataEmissao'])
+                                      ? Carbon::parse($res['dataEmissao'])
+                                      : now();
+        // Já salva pix e linha digitável se já vierem
+        $pag->pix = $res['pix']['pixCopiaECola'] ?? null;
+        $pag->linha_digitavel = $res['linhaDigitavel'] ?? null;
+        $pag->json_resposta = json_encode($res);
+        $pag->tentativas = 0;
+        $pag->error_message = null;
+        $pag->save();
+
+        Log::info("GerarBoletoJob: sucesso createBoleto Pagamento ID {$pag->id}, codigo {$codigo}");
+
+        // PDF e Pix garantidos via DownloadBoletoPdfJob, mas você já salva o que vier aqui
+        \App\Jobs\DownloadBoletoPdfJob::dispatch($pag->id, $codigo)
+            ->delay(now()->addMinutes(5));
+
+    } catch (Exception $e) {
+        $pag->tentativas = ($pag->tentativas ?? 0) + 1;
+        $pag->error_message = "Erro pós-create: ".$e->getMessage();
+        $pag->save();
+        Log::error("GerarBoletoJob: erro ao salvar pós-create Pagamento ID {$pag->id}: ".$e->getMessage());
+        return;
+    }
+}
+
+
+
+
 
     public function failed(Exception $e)
     {

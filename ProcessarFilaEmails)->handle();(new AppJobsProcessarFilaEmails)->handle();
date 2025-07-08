@@ -1,0 +1,18 @@
+[90m= [39m[34;4mApp\Models\FilaEmail[39;24m {#6646
+    [34mid[39m: [35m6[39m,
+    [34mtipo[39m: "[32mcontrato[39m",
+    [34memail_destino[39m: "[32maugusto.netoqueiroz@gmail.com[39m",
+    [34massunto[39m: "[32mSeu contrato foi criado![39m",
+    [34mcorpo[39m: "[32m<h1>Contrato Gerado!</h1><p>Olá João, seu contrato foi criado em nosso sistema. Obrigado por escolher a CredVance!</p>[39m",
+    [34mdados_extras[39m: "[32m{"contrato": {"id": 999, "cliente": {"name": "João"}, "aceito_em": "2025-07-03 18:00:00", "consorcio": {"plano": "Plano Ouro"}, "quantidade_cotas": 5}}[39m",
+    [34magendado_em[39m: "[32m2025-07-04 09:44:01[39m",
+    [34menviado_em[39m: [36mnull[39m,
+    [34mvisualizado_em[39m: [36mnull[39m,
+    [34multima_tentativa[39m: [36mnull[39m,
+    [34merro[39m: [36mnull[39m,
+    [34mtentativas[39m: [35m0[39m,
+    [34mstatus[39m: "[32mpendente[39m",
+    [34mcreated_at[39m: "[32m2025-07-04 09:44:01[39m",
+    [34mupdated_at[39m: "[32m2025-07-04 09:44:01[39m",
+  }
+
