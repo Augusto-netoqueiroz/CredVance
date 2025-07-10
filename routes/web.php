@@ -603,3 +603,10 @@ Route::get('/logs', [LogsController::class, 'index'])->name('logs.index');
 Route::get('pagamentos/inter', [PagamentoController::class, 'index'])->name('pagamentos.index');
 Route::get('pagamentos/{pagamento}/pix', [PagamentoController::class, 'showPix'])->name('pagamentos.pix');
 Route::get('pagamentos/{codigoSolicitacao}', [PagamentoController::class, 'show'])->name('pagamentos.show');
+
+
+
+//Template service - rota por enquanto
+route::get('/contrato/novo', function () {
+    return view('contratos.novo');
+});

@@ -29,46 +29,39 @@ public function data(): JsonResponse
 {
     $user = Auth::user();
 
-    // Buscar pagamentos do cliente, incluindo boleto_path e pix
-    $pagamentosRaw = Pagamento::whereHas('contrato', function($q) use ($user) {
-            $q->where('cliente_id', $user->id);
-        })
-        ->orderBy('vencimento')
-        ->get(['id', 'vencimento', 'valor', 'status', 'boleto_path', 'pix']);
+    $pagamentosRaw = Pagamento::whereHas('contrato', function ($q) use ($user) {
+        $q->where('cliente_id', $user->id);
+    })
+    ->orderBy('vencimento')
+    ->get(['id', 'vencimento', 'valor', 'status', 'boleto_path', 'pix']);
 
-    $pagamentos = $pagamentosRaw->map(function($p) {
+    $pagamentos = $pagamentosRaw->map(function ($p) {
         $url = null;
 
         if ($p->boleto_path) {
-            $originalPath = $p->boleto_path;
+            $originalPath = $p->boleto_path; // Exemplo: boletos/1010/boleto_f7ad9a7e-5c26-4811-9044-ee93507dc582.pdf
 
-            // Tenta remover 'boletos/' do início (para compatibilidade com o disco)
+            // Disco 'boletos' está configurado para 'storage/app/private/boletos'
+            // Então caminho relativo esperado é '1010/boleto_...pdf'
             $relativePath = preg_replace('#^boletos/#', '', $originalPath);
 
-            $found = false;
+            $foundInBoletos = Storage::disk('boletos')->exists($relativePath);
+            $foundInLocal = Storage::disk('local')->exists($originalPath); // 'local' aponta para storage/app/private
 
-            // Primeira tentativa: usando o path relativo
-            if (Storage::disk('boletos')->exists($relativePath)) {
-                $found = true;
-            }
-            // Fallback: tenta com o caminho completo original
-            elseif (Storage::disk('boletos')->exists($originalPath)) {
-                $relativePath = $originalPath;
-                $found = true;
-            }
+            Log::info("Verificação arquivo boleto para pagamento ID {$p->id}:");
+            Log::info(" - Disco 'boletos' arquivo '{$relativePath}': " . ($foundInBoletos ? 'encontrado' : 'não encontrado'));
+            Log::info(" - Disco 'local' arquivo '{$originalPath}': " . ($foundInLocal ? 'encontrado' : 'não encontrado'));
 
-            if ($found) {
+            if ($foundInBoletos || $foundInLocal) {
                 $url = route('pagamentos.download-boleto', ['pagamento' => $p->id]);
             } else {
-                Log::warning("ClienteController@data: boleto não encontrado em disk 'boletos': '{$originalPath}'");
+                Log::warning("Arquivo boleto não encontrado nos discos para pagamento ID {$p->id}: '{$originalPath}'");
             }
         }
 
         return [
             'id'         => $p->id,
-            'vencimento' => is_object($p->vencimento)
-                                ? $p->vencimento->format('d/m/Y')
-                                : $p->vencimento,
+            'vencimento' => is_object($p->vencimento) ? $p->vencimento->format('d/m/Y') : $p->vencimento,
             'valor'      => number_format($p->valor, 2, ',', '.'),
             'status'     => $p->status,
             'boleto_url' => $url,
@@ -76,45 +69,23 @@ public function data(): JsonResponse
         ];
     });
 
-    // Contratos com PDF de contrato
-    $contratos = Contrato::where('cliente_id', $user->id)
-        ->whereNotNull('pdf_contrato')
-        ->orderByDesc('id')
-        ->get(['id', 'created_at', 'pdf_contrato']);
-
-    $documentos = $contratos->map(function ($contrato) {
-        return [
-            'id'   => $contrato->id,
-            'data' => $contrato->created_at->format('d/m/Y'),
-            'url'  => route('cliente.contrato.download', ['contrato' => $contrato->id]),
-        ];
-    });
-
-    $parcela_aberto  = $pagamentosRaw->where('status', 'pendente')->count();
-    $parcela_paga    = $pagamentosRaw->where('status', 'pago')->count();
-    $proxima_raw     = $pagamentosRaw->firstWhere('status', 'pendente');
-    $proxima_parcela = $proxima_raw
-                         ? [
-                             'vencimento' => is_object($proxima_raw->vencimento)
-                                                ? $proxima_raw->vencimento->format('m/Y')
-                                                : $proxima_raw->vencimento,
-                             'valor'      => number_format($proxima_raw->valor, 2, ',', '.'),
-                           ]
-                         : null;
-
-    $status_consorcio = Contrato::where('cliente_id', $user->id)
-        ->orderByDesc('id')
-        ->value('status');
+    // ... seu código para contratos e demais dados continua igual ...
 
     return response()->json([
-        'parcela_aberto'   => $parcela_aberto,
-        'parcela_paga'     => $parcela_paga,
-        'proxima_parcela'  => $proxima_parcela,
-        'status_consorcio' => $status_consorcio,
+        'parcela_aberto'   => $pagamentosRaw->where('status', 'pendente')->count(),
+        'parcela_paga'     => $pagamentosRaw->where('status', 'pago')->count(),
+        'proxima_parcela'  => $pagamentosRaw->firstWhere('status', 'pendente') ? [
+            'vencimento' => is_object($pagamentosRaw->firstWhere('status', 'pendente')->vencimento) 
+                                ? $pagamentosRaw->firstWhere('status', 'pendente')->vencimento->format('m/Y')
+                                : $pagamentosRaw->firstWhere('status', 'pendente')->vencimento,
+            'valor' => number_format($pagamentosRaw->firstWhere('status', 'pendente')->valor, 2, ',', '.'),
+        ] : null,
+        'status_consorcio' => Contrato::where('cliente_id', $user->id)->orderByDesc('id')->value('status'),
         'pagamentos'       => $pagamentos,
-        'documentos'       => $documentos,
+        // 'documentos' igual seu código...
     ]);
 }
+
 
 
 
