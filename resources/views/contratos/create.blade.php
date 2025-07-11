@@ -16,20 +16,19 @@
       display: inline-block;
       width: 100%;
     }
-   .toggle-senha {
-  position: absolute;
-  right: 0.75rem;
-  top: 69%;
-  transform: translateY(-43%);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  color: #555;
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
+    .toggle-senha {
+      position: absolute;
+      right: 0.75rem;
+      top: 69%;
+      transform: translateY(-43%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+      color: #555;
+      width: 1.5rem;
+      height: 1.5rem;
+    }
     .toggle-senha svg {
       width: 100%;
       height: 100%;
@@ -102,7 +101,7 @@
               <option value="" disabled selected>Selecione um plano</option>
               @foreach($consorcios as $cons)
                 <option value="{{ $cons->id }}" data-prazo="{{ $cons->prazo }}" data-valor-total="{{ $cons->valor_total }}" data-parcela-mensal="{{ $cons->parcela_mensal }}" data-juros="{{ $cons->juros }}" data-valor-final="{{ $cons->valor_final }}">
-                  {{ $cons->plano }} — 16% de retorno
+                  {{ $cons->plano }} — {{ $cons->juros }}% de retorno
                 </option>
               @endforeach
             </select>
@@ -248,6 +247,105 @@
       return true;
     }
 
+    // Função que preenche o resumo detalhado do contrato no step 3
+function gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano) {
+  const parcelas = [];
+  let valorAtual = parcelaInicial;
+  let count = 0;
+
+  for (let i = 1; i <= prazo; i++) {
+    parcelas.push(valorAtual);
+
+    if (tipoPlano === "24meses") {
+      count++;
+      if (count === repeteMeses) {
+        valorAtual = Math.max(valorAtual - decremento, 0);
+        count = 0;
+      }
+    } else if (tipoPlano === "12meses") {
+      // diminui todo mês
+      valorAtual = Math.max(valorAtual - decremento, 0);
+    }
+  }
+  return parcelas;
+}
+
+function preencherResumo() {
+  // Dados do cliente
+  const clienteOpt = document.getElementById('cliente_id');
+  const nome = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.nome : document.getElementById('cliente_dados')?.dataset.nome;
+  const cpf = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.cpf : document.getElementById('cliente_dados')?.dataset.cpf;
+  const email = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.email : document.getElementById('cliente_dados')?.dataset.email;
+
+  // Dados do plano
+  const planoOpt = document.getElementById('consorcio_id');
+  const planoTexto = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.text : '';
+  const juros = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.dataset.juros : 0;
+  const prazo = planoOpt ? parseInt(planoOpt.options[planoOpt.selectedIndex]?.dataset.prazo) : 24;
+  const parcelaInicial = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.parcelaMensal) : 155;
+  const valorFinal = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.valorFinal) : 0;
+
+  // Quantidade de cotas
+  const qtd = parseInt(document.getElementById('quantidade_cotas').value) || 1;
+
+  // Detectar tipo do plano pelo prazo (ou pode usar outro dado, se quiser)
+  const tipoPlano = prazo === 24 ? "24meses" : "12meses";
+
+  // Gerar parcelas
+  const decremento = 5;
+  const repeteMeses = 2;
+  const parcelas = gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano);
+
+  // Calcular total pago (soma das parcelas * qtd)
+  const totalPago = parcelas.reduce((acc, val) => acc + val, 0) * qtd;
+
+  // Formatar primeira e última parcela
+  const primeiraPar = parcelas[0].toFixed(2);
+  const ultimaPar = parcelas[parcelas.length - 1].toFixed(2);
+
+  // Calcular vencimento 1ª parcela (hoje + 1 mês)
+  const venc = new Date();
+  venc.setMonth(venc.getMonth() + 1);
+  const dia = String(venc.getDate()).padStart(2, '0');
+  const mes = String(venc.getMonth() + 1).padStart(2, '0');
+  const ano = venc.getFullYear();
+
+  // Montar HTML do contrato
+  const contratoHTML = `
+    <div>
+      <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
+      <div class="mb-3">
+        <p class="text-xs"><span class="font-medium">Nome:</span> ${nome}</p>
+        <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf}</p>
+        <p class="text-xs"><span class="font-medium">E-mail:</span> ${email}</p>
+        <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${planoTexto.trim()}</p>
+        <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtd}</p>
+      </div>
+      <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
+        <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
+        <div class="grid grid-cols-2 gap-1 text-xs">
+          <p><span class="font-medium">1ª parcela:</span></p>
+          <p class="text-right">R$ ${primeiraPar}</p>
+          <p><span class="font-medium">Última parcela:</span></p>
+          <p class="text-right">R$ ${ultimaPar}</p>
+          <p><span class="font-medium">Total a pagar:</span></p>
+          <p class="text-right">R$ ${totalPago.toFixed(2)}</p>
+          <p><span class="font-medium">Valor final (com ${juros}%):</span></p>
+          <p class="text-right">R$ ${(valorFinal * qtd).toFixed(2)}</p>
+          <p><span class="font-medium">Vencimento 1ª parcela:</span></p>
+          <p class="text-right">${dia}/${mes}/${ano}</p>
+        </div>
+      </div>
+      <p class="text-xs font-medium text-center">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
+    </div>
+  `;
+
+  document.getElementById('resumoContrato').innerHTML = contratoHTML;
+}
+
+
+
+
     // Intercepta submit para validar CPF e senha e preencher hidden inputs + localização
     document.getElementById('formContrato').addEventListener('submit', async function(event) {
       event.preventDefault();
@@ -334,28 +432,6 @@
 
     function fecharMiniModalErro() {
       document.getElementById('miniModalErro').classList.add('hidden');
-    }
-
-    function preencherResumo() {
-      const clienteOpt = document.getElementById('cliente_id');
-      const clienteNome = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.nome : document.getElementById('cliente_dados')?.dataset.nome;
-      const clienteCPF = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.cpf : document.getElementById('cliente_dados')?.dataset.cpf;
-      const clienteEmail = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.email : document.getElementById('cliente_dados')?.dataset.email;
-
-      const planoOpt = document.getElementById('consorcio_id');
-      const planoTexto = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.text : '';
-
-      const qtd = document.getElementById('quantidade_cotas').value;
-      const dia = document.getElementById('dia_vencimento').value;
-
-      const resumoHTML = `
-        <p><strong>Cliente:</strong> ${clienteNome} (${clienteCPF}) - ${clienteEmail}</p>
-        <p><strong>Plano de Cota:</strong> ${planoTexto}</p>
-        <p><strong>Quantidade de Cotas:</strong> ${qtd}</p>
-        <p><strong>Melhor dia de vencimento:</strong> ${dia}</p>
-      `;
-
-      document.getElementById('resumoContrato').innerHTML = resumoHTML;
     }
 
     // Toggle senha

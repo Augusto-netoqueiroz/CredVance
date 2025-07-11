@@ -18,6 +18,10 @@
                    class="px-4 py-2 rounded {{ $tipo === 'boletos' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700' }}">
                     Logs de Boletos
                 </a>
+                <a href="{{ route('logs.index', ['tipo' => 'cron']) }}"
+                   class="px-4 py-2 rounded {{ $tipo === 'cron' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700' }}">
+                    Logs Cron
+                </a>
             </div>
 
             @if ($tipo === 'boletos')
@@ -70,6 +74,40 @@
                         @endforelse
                     </tbody>
                 </table>
+
+            @elseif ($tipo === 'cron')
+                {{-- Tabela Logs Cron --}}
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Comando</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Executado em</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase max-w-xl break-words">Output</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @forelse ($logs as $log)
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->id }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-700 dark:text-gray-200">{{ $log->command }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->status ?? '-' }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ optional($log->executed_at)->format('d/m/Y H:i:s') ?? '-' }}</td>
+                                <td class="px-6 py-4 max-w-xl text-xs text-gray-700 dark:text-gray-200">
+                                    <div class="output-preview cursor-pointer overflow-hidden whitespace-pre-wrap" style="max-height: 3rem; transition: max-height 0.3s ease;">
+                                        {{ $log->output ?? '-' }}
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center p-4 text-sm text-gray-500 dark:text-gray-400">Nenhum log encontrado.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+
             @else
                 {{-- Tabela Logs de Atividade --}}
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -109,4 +147,23 @@
             </div>
         </div>
     </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.output-preview').forEach(div => {
+          div.style.maxHeight = '3rem'; // inicial limita a 3rem (~3 linhas)
+          div.style.overflow = 'hidden';
+          div.style.cursor = 'pointer';
+          div.style.transition = 'max-height 0.3s ease';
+
+          div.addEventListener('click', () => {
+            if(div.style.maxHeight === 'none') {
+              div.style.maxHeight = '3rem';
+            } else {
+              div.style.maxHeight = 'none';
+            }
+          });
+        });
+      });
+    </script>
 </x-app-layout>

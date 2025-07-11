@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\BoletoLog;
 use App\Models\Pagamento;
+use App\Models\CronLog;
 use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -14,19 +15,22 @@ class LogsController extends Controller
 
 public function index(Request $request)
     {
-        $tipo = $request->query('tipo', 'atividade'); // padrão: atividade
+        $tipo = $request->query('tipo', 'atividade');
 
         if ($tipo === 'boletos') {
             $logs = BoletoLog::with(['contrato', 'cliente', 'pagamento'])
                 ->orderBy('created_at', 'desc')
                 ->paginate(20);
+        } elseif ($tipo === 'cron') {
+            $logs = CronLog::orderBy('executed_at', 'desc')
+                ->paginate(20);
         } else {
-            // logs de atividade
             $logs = ActivityLog::orderBy('data', 'desc')->paginate(20);
         }
 
         return view('relatorio.atividade_logs.index', compact('logs', 'tipo'));
     }
+
 
 public function downloadBoletolog($pagamentoId)
 {
