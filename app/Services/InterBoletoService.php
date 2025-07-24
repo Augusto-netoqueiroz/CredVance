@@ -16,63 +16,68 @@ class InterBoletoService
     protected string $tokenScope;
     protected string $contaCorrente;
 
-    public function __construct()
-    {
-        $useSandbox = filter_var(env('INTER_USE_SANDBOX', false), FILTER_VALIDATE_BOOLEAN);
+public function __construct()
+{
+    $useSandbox = config('inter.use_sandbox', false);
 
-        if ($useSandbox) {
-            $this->tokenUrl = env('INTER_TOKEN_URL_SANDBOX');
-            $base = env('INTER_BASE_URL_SANDBOX');
-            $path = env('INTER_COBRANCA_PATH_SANDBOX', '/cobranca/v3/cobrancas');
-            if (empty($this->tokenUrl) || empty($base)) {
-                throw new RuntimeException("INTER_TOKEN_URL_SANDBOX ou INTER_BASE_URL_SANDBOX não configurados.");
-            }
-            $this->baseResourceUrl = rtrim($base, '/') . '/' . ltrim($path, '/');
-            $verifyOption = false;
-        } else {
-            $this->tokenUrl = env('INTER_TOKEN_URL_PROD');
-            $base = env('INTER_BASE_URL_PROD_RESOURCES');
-            $path = env('INTER_COBRANCA_PATH_PROD', '/cobranca/v3/cobrancas');
-            if (empty($this->tokenUrl) || empty($base)) {
-                throw new RuntimeException("INTER_TOKEN_URL_PROD ou INTER_BASE_URL_PROD_RESOURCES não configurados.");
-            }
-            $this->baseResourceUrl = rtrim($base, '/') . '/' . ltrim($path, '/');
-            $caPath = env('INTER_CA_PATH');
-            $verifyOption = $caPath ? $caPath : true;
+    if ($useSandbox) {
+        $tokenUrl = config('inter.api.token_url_sandbox');
+        $base = config('inter.api.base_url_sandbox');
+        $path = config('inter.api.cobranca_path_sandbox', '/cobranca/v3/cobrancas');
+
+        if (empty($tokenUrl) || empty($base)) {
+            throw new RuntimeException("INTER_TOKEN_URL_SANDBOX ou INTER_BASE_URL_SANDBOX não configurados.");
         }
 
-        $this->tokenScope = env('INTER_TOKEN_SCOPE', '');
-        if (empty($this->tokenScope)) {
-            Log::warning('INTER_TOKEN_SCOPE não configurado; talvez falte escopo.');
+        $this->tokenUrl = $tokenUrl;
+        $this->baseResourceUrl = rtrim($base, '/') . '/' . ltrim($path, '/');
+        $verifyOption = false;
+    } else {
+        $tokenUrl = config('inter.api.token_url_prod');
+        $base = config('inter.api.base_url_prod');
+        $path = config('inter.api.cobranca_path_prod', '/cobranca/v3/cobrancas');
+
+        if (empty($tokenUrl) || empty($base)) {
+            throw new RuntimeException("INTER_TOKEN_URL_PROD ou INTER_BASE_URL_PROD_RESOURCES não configurados.");
         }
 
-        $this->contaCorrente = env('INTER_CONTA_CORRENTE', '');
-        if (empty($this->contaCorrente)) {
-            Log::warning('INTER_CONTA_CORRENTE não configurado; cabeçalho x-conta-corrente pode faltar.');
-        }
-
-        $certPath = env('INTER_CERT_PATH');
-        $keyPath  = env('INTER_CERT_KEY_PATH');
-        if (empty($certPath) || empty($keyPath)) {
-            throw new RuntimeException("INTER_CERT_PATH ou INTER_CERT_KEY_PATH não configurados.");
-        }
-        if (! file_exists($certPath) || ! file_exists($keyPath)) {
-            throw new RuntimeException("Certificado ou chave Inter não encontrados: $certPath, $keyPath");
-        }
-        $this->certOptions = [
-            'cert'    => $certPath,
-            'ssl_key' => $keyPath,
-            'verify'  => $verifyOption,
-        ];
-
-        Log::info('InterBoletoService inicializado', [
-            'tokenUrl' => $this->tokenUrl,
-            'baseResourceUrl' => $this->baseResourceUrl,
-            'certOptions' => $this->certOptions,
-            'tokenScope' => $this->tokenScope,
-            'contaCorrente' => $this->contaCorrente,
-        ]);
+        $this->tokenUrl = $tokenUrl;
+        $this->baseResourceUrl = rtrim($base, '/') . '/' . ltrim($path, '/');
+        $caPath = config('inter.ca_path');
+        $verifyOption = $caPath ?: true;
     }
+
+    $this->tokenScope = config('inter.token_scope', '');
+    $this->contaCorrente = config('inter.conta_corrente', '');
+
+    $certPath = config('inter.cert_path');
+
+    if (empty($certPath)) {
+        throw new RuntimeException("INTER_CERT_PATH não configurado.");
+    }
+
+    if (!file_exists($certPath)) {
+        throw new RuntimeException("Certificado Inter não encontrado: $certPath");
+    }
+
+    $this->certOptions = [
+        'cert'   => $certPath,
+        'verify' => $verifyOption,
+    ];
+
+    Log::info('InterBoletoService inicializado', [
+        'useSandbox'       => $useSandbox,
+        'tokenUrl'         => $this->tokenUrl,
+        'baseResourceUrl'  => $this->baseResourceUrl,
+        'certPath'         => $certPath,
+        'verifyOption'     => $verifyOption,
+        'tokenScope'       => $this->tokenScope,
+        'contaCorrente'    => $this->contaCorrente,
+    ]);
+}
+
+
+
 
     /**
      * Obtém token e cacheia até perto do vencimento.
@@ -80,55 +85,64 @@ class InterBoletoService
      * @return string
      * @throws RuntimeException
      */
-    public function getToken(): string
-    {
-        $cacheKey = 'inter_access_token';
+public function getToken(): string
+{
+    $cacheKey = 'inter_access_token';
 
-        if (Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
-        }
-
-        $clientId     = env('INTER_CLIENT_ID');
-        $clientSecret = env('INTER_CLIENT_SECRET');
-        if (! $clientId || ! $clientSecret) {
-            throw new RuntimeException("INTER_CLIENT_ID ou INTER_CLIENT_SECRET não configurados.");
-        }
-
-        $client = Http::withBasicAuth($clientId, $clientSecret)
-                      ->withOptions($this->certOptions)
-                      ->withHeaders(['Accept' => 'application/json']);
-
-        $form = ['grant_type' => 'client_credentials'];
-        if (! empty($this->tokenScope)) {
-            $form['scope'] = $this->tokenScope;
-        }
-
-        $resp = $client->asForm()->post($this->tokenUrl, $form);
-        if (! $resp->ok()) {
-            Log::error('Erro ao obter token Inter', [
-                'status' => $resp->status(),
-                'body'   => $resp->body(),
-                'url'    => $this->tokenUrl,
-            ]);
-            throw new RuntimeException("Erro ao obter token Inter: HTTP {$resp->status()} - {$resp->body()}");
-        }
-        $json = $resp->json();
-        if (! isset($json['access_token'])) {
-            throw new RuntimeException("Resposta de token sem access_token: " . json_encode($json, JSON_UNESCAPED_UNICODE));
-        }
-
-        $accessToken = $json['access_token'];
-        $expiresIn = isset($json['expires_in']) ? (int)$json['expires_in'] : 3600;
-        Log::info('Token obtido com sucesso', [
-            'scope_returned' => $json['scope'] ?? null,
-            'expires_in'     => $expiresIn,
-        ]);
-
-        $ttlSeconds = max($expiresIn - 60, 60);
-        Cache::put($cacheKey, $accessToken, Carbon::now()->addSeconds($ttlSeconds));
-
-        return $accessToken;
+    if (Cache::has($cacheKey)) {
+        return Cache::get($cacheKey);
     }
+
+    $clientId     = config('inter.client_id');
+    $clientSecret = config('inter.client_secret');
+
+    if (!$clientId || !$clientSecret) {
+        throw new RuntimeException("INTER_CLIENT_ID ou INTER_CLIENT_SECRET não configurados.");
+    }
+
+    $client = Http::withBasicAuth($clientId, $clientSecret)
+        ->withOptions($this->certOptions)
+        ->withHeaders(['Accept' => 'application/json']);
+
+    $form = ['grant_type' => 'client_credentials'];
+
+    if (!empty($this->tokenScope)) {
+        $form['scope'] = $this->tokenScope;
+    }
+
+    $resp = $client->asForm()->post($this->tokenUrl, $form);
+
+    if (!$resp->ok()) {
+        Log::error('Erro ao obter token Inter', [
+            'status' => $resp->status(),
+            'body'   => $resp->body(),
+            'url'    => $this->tokenUrl,
+        ]);
+        throw new RuntimeException("Erro ao obter token Inter: HTTP {$resp->status()} - {$resp->body()}");
+    }
+
+    $json = $resp->json();
+
+    if (!isset($json['access_token'])) {
+        throw new RuntimeException("Resposta de token sem access_token: " . json_encode($json, JSON_UNESCAPED_UNICODE));
+    }
+
+    $accessToken = $json['access_token'];
+    $expiresIn = isset($json['expires_in']) ? (int)$json['expires_in'] : 3600;
+
+    Log::info('Token obtido com sucesso', [
+        'scope_returned' => $json['scope'] ?? null,
+        'expires_in'     => $expiresIn,
+    ]);
+
+    $ttlSeconds = max($expiresIn - 60, 60);
+    Cache::put($cacheKey, $accessToken, Carbon::now()->addSeconds($ttlSeconds));
+
+    return $accessToken;
+}
+
+
+
 
     /**
      * Cria boleto na API Inter. Espera $data contendo chave 'sacado' e demais opcionais.
@@ -664,6 +678,42 @@ public function cancelarBoletoPorCodigoSolicitacao(string $codigoSolicitacao, st
 
     return $resp->json();
 }
+
+
+
+public function cancelarBoletoComValor(string $codigoSolicitacao, float $valorNominal): array
+{
+    $token = $this->getToken();
+    $url = rtrim($this->baseResourceUrl, '/') . '/' . urlencode($codigoSolicitacao) . '/cancelar';
+
+    $payload = [
+        'valorNominal' => $valorNominal,
+        'motivoCancelamento' => 'Remarcação de vencimento',
+    ];
+
+    \Log::debug('[DEBUG] POST cancelamento COM VALOR: ' . $url);
+    \Log::debug('[DEBUG] Payload:', $payload);
+
+    $resp = \Http::withToken($token)
+        ->withOptions($this->certOptions)
+        ->withHeaders([
+            'Accept' => 'application/json',
+            'x-conta-corrente' => $this->contaCorrente,
+        ])
+        ->post($url, $payload);
+
+    if ($resp->failed()) {
+        \Log::error('[ERRO] Cancelamento com valor falhou', [
+            'status' => $resp->status(),
+            'body' => $resp->body(),
+        ]);
+
+        throw new \RuntimeException('Erro ao cancelar cobrança (com valor): HTTP ' . $resp->status() . ' - ' . $resp->body());
+    }
+
+    return $resp->json() ?? [];
+}
+
 
 
 

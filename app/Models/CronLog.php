@@ -16,4 +16,8 @@ class CronLog extends Model
     ];
 
     public $timestamps = true; // created_at, updated_at
+
+    protected $casts = [
+        'executed_at' => 'datetime',
+    ];
 }

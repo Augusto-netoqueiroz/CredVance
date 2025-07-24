@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\ParceiroAdminController;
 use App\Http\Controllers\EmailController;
 use App\Http\Controllers\LogsController;
 use App\Http\Controllers\PagamentoController;
+use App\Http\Controllers\QrCodeController;
 
 
 
@@ -49,7 +50,7 @@ Route::post('/verifica-senha', function (Illuminate\Http\Request $request) {
 
 //View inicial
 Route::get('/', function () {
-    return view('pagina');
+    return view('pagina3');
 });
 
 //Template prinicial - rota por enquanto
@@ -60,6 +61,11 @@ route::get('/pagina', function () {
 //Template prinicial - rota por enquanto
 route::get('/pagina2', function () {
     return view('paginanova');
+});
+
+//Template prinicial - rota por enquanto
+route::get('/pagina3', function () {
+    return view('pagina3');
 });
 
 //Template service - rota por enquanto
@@ -75,6 +81,31 @@ route::get('/reset', function () {
 
 
 
+//Template service - rota por enquanto
+route::get('/register2', function () {
+    return view('register2');
+});
+
+
+//Template service - rota por enquanto
+route::get('/login2', function () {
+    return view('login2');
+});
+
+
+
+//Template service - rota por enquanto
+route::get('/forgot2', function () {
+    return view('forgot');
+});
+
+//Template service - rota por enquanto
+route::get('/email2', function () {
+    return view('emails.boleto_enviado');
+});
+
+
+ 
 
 //Template service - rota por enquanto
 //route::get('/register', function () {
@@ -609,4 +640,29 @@ Route::get('pagamentos/{codigoSolicitacao}', [PagamentoController::class, 'show'
 //Template service - rota por enquanto
 route::get('/contrato/novo', function () {
     return view('contratos.novo');
+});
+
+Route::get('/qrcode', [QrCodeController::class, 'index']);
+
+
+
+Route::get('/boletos/remarcar', [BoletoController::class, 'formBusca'])->name('boletos.form_busca');
+Route::post('/boletos/remarcar/buscar', [BoletoController::class, 'buscar'])->name('boletos.buscar');
+Route::post('/boletos/remarcar', [BoletoController::class, 'remarcar'])->name('boletos.remarcar');  
+
+// routes/web.php
+Route::get('/boletos/novo', [BoletoController::class, 'criarBoletoForm'])->name('boletos.novo');
+Route::post('/boletos/novo', [BoletoController::class, 'criarBoleto'])->name('boletos.salvar');
+
+// Rota para AJAX buscar dados do cliente selecionado
+Route::get('/api/clientes/{id}', [BoletoController::class, 'dadosCliente'])->name('api.clientes.dados');
+
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/painel-boletos', [BoletoController::class, 'boletosPainel'])->name('boleto.painel');
+    Route::post('/boletos/criar', [BoletoController::class, 'criarBoleto'])->name('boleto.criar');
+    Route::post('/boletos/upload', [BoletoController::class, 'manageUpload'])->name('boleto.upload');
+    Route::post('/boletos/pago', [BoletoController::class, 'marcarComoPago'])->name('boleto.pago');
+    Route::delete('/boletos/{pagamento}', [BoletoController::class, 'destroy'])->name('boleto.deletar');
+    Route::get('/clientes/{id}/dados', [BoletoController::class, 'dadosCliente'])->name('cliente.dados');
 });

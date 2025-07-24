@@ -8,9 +8,21 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use App\Services\ActivityLoggerService;
+use App\Services\InterBoletoService;
+use App\Models\User;
+use Illuminate\Support\Facades\Log;
+
 
 class BoletoController extends Controller
 {
+
+
+     public function __construct(InterBoletoService $interService)
+    {
+        $this->interService = $interService;
+    }
+
+
     private function checkAdmin()
     {
         if (auth()->user()->role !== 'admin') {
@@ -191,5 +203,207 @@ class BoletoController extends Controller
         "comprovante_{$pagamento->id}." . pathinfo($pagamento->comprovante, PATHINFO_EXTENSION)
     );
 }
+
+
+
+public function formBusca()
+{
+    return view('boletos.remarcar');
+}
+
+public function buscar(Request $request)
+{
+    $request->validate(['codigo_solicitacao' => 'required|string']);
+    try {
+        $codigo = $request->input('codigo_solicitacao');
+        $boleto = $this->interService->getCobranca($codigo);
+        return response()->json($boleto);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Erro ao buscar boleto: ' . $e->getMessage()], 400);
+    }
+}
+
+public function remarcar(Request $request)
+{
+    $request->validate([
+        'codigo_solicitacao' => 'required|string',
+        'nova_data' => 'required|date',
+    ]);
+
+    try {
+        $codigo = $request->input('codigo_solicitacao');
+        $novaData = $request->input('nova_data');
+
+        $original = $this->interService->getCobranca($codigo);
+        $cobranca = $original['cobranca'] ?? [];
+        $pagadorOriginal = $cobranca['pagador'] ?? [];
+
+        $valorNominal = isset($cobranca['valorNominal']) && $cobranca['valorNominal'] >= 2.5
+            ? $cobranca['valorNominal']
+            : 2.5;
+
+        // Cancelar o boleto anterior com valor
+        $this->interService->cancelarBoletoComValor($codigo, $valorNominal);
+
+        // Garantir que endereço seja array válido
+        $enderecoOriginal = $pagadorOriginal['endereco'] ?? [];
+        $endereco = is_array($enderecoOriginal) ? $enderecoOriginal : [];
+
+        // Preencher campos obrigatórios de endereço
+        $endereco = [
+            'logradouro' => $endereco['logradouro'] ?? 'Rua Não Informada',
+            'numero'     => $endereco['numero'] ?? 'S/N',
+            'bairro'     => $endereco['bairro'] ?? 'Centro',
+            'cidade'     => $endereco['cidade'] ?? 'Cidade Desconhecida',
+            'uf'         => $endereco['uf'] ?? 'SP',
+            'cep'        => $endereco['cep'] ?? '00000000',
+        ];
+
+        // Preencher campos obrigatórios de sacado (pagador)
+        $pagador = [
+            'nome'       => $pagadorOriginal['nome'] ?? 'Cliente Desconhecido',
+            'cpfCnpj'    => $pagadorOriginal['cpfCnpj'] ?? '00000000000',
+            'tipoPessoa' => $pagadorOriginal['tipoPessoa'] ?? 'FISICA',
+            'email'      => $pagadorOriginal['email'] ?? 'sememail@exemplo.com',
+            'telefone'   => $pagadorOriginal['telefone'] ?? '11999999999',
+            'endereco'   => $endereco,
+        ];
+
+        // Criar novo boleto
+        $novo = $this->interService->createBoleto([
+            'nosso_numero'     => $cobranca['seuNumero'] ?? '',
+            'valor'            => $valorNominal,
+            'data_vencimento'  => $novaData,
+            'sacado'           => $pagador,
+            'num_dias_agenda'  => 30,
+        ]);
+
+        $boletoFinal = $this->interService->getCobranca($novo['codigoSolicitacao']);
+
+        return response()->json(['novoBoleto' => $boletoFinal]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Erro ao remarcar boleto: ' . $e->getMessage()], 400);
+    }
+}
+
+
+public function criarBoletoForm()
+{
+    $clientes = User::whereNotNull('cpf')->where('ativo', true)->get();
+    return view('boletos.novo', compact('clientes'));
+}
+
+public function dadosCliente($id)
+{
+    $cliente = User::findOrFail($id);
+
+    return response()->json([
+        'nome' => $cliente->name,
+        'cpfCnpj' => $cliente->cpf,
+        'email' => $cliente->email,
+        'telefone' => $cliente->telefone,
+        'logradouro' => $cliente->logradouro,
+        'numero' => $cliente->numero,
+        'complemento' => $cliente->complemento,
+        'bairro' => $cliente->bairro,
+        'cidade' => $cliente->cidade,
+        'uf' => $cliente->uf,
+        'cep' => $cliente->cep,
+    ]);
+}
+
+public function criarBoleto(Request $request)
+{
+    $request->validate([
+        'nosso_numero' => 'required|string',
+        'valor' => 'required|numeric|min:1',
+        'data_vencimento' => 'required|date|after_or_equal:today',
+        'sacado.nome' => 'required|string',
+        'sacado.cpfCnpj' => 'required|string',
+        'sacado.tipoPessoa' => 'required|string',
+        'sacado.logradouro' => 'required|string',
+        'sacado.numero' => 'required|string',
+        'sacado.bairro' => 'required|string',
+        'sacado.cidade' => 'required|string',
+        'sacado.uf' => 'required|string',
+        'sacado.cep' => 'required|string',
+    ]);
+
+    try {
+        $s = $request->input('sacado');
+
+        $sacado = [
+            'cpfCnpj'      => preg_replace('/\D/', '', $s['cpfCnpj']),
+            'nome'         => $s['nome'],
+            'email'        => $s['email'] ?? null,
+            'telefone'     => preg_replace('/\D/', '', $s['telefone'] ?? ''),
+            'ddd'          => preg_replace('/\D/', '', $s['ddd'] ?? ''),
+            'tipoPessoa'   => strtoupper($s['tipoPessoa']),
+            'cep'          => preg_replace('/\D/', '', $s['cep']),
+            'logradouro'   => $s['logradouro'],
+            'bairro'       => $s['bairro'],
+            'cidade'       => $s['cidade'],
+            'uf'           => strtoupper($s['uf']),
+            'numero'       => $s['numero'],
+            'complemento'  => $s['complemento'] ?? '',
+        ];
+
+        $dados = [
+            'valor' => $request->input('valor'),
+            'nosso_numero' => $request->input('nosso_numero'),
+            'data_vencimento' => $request->input('data_vencimento'),
+            'sacado' => $sacado,
+            'num_dias_agenda' => (int) $request->input('num_dias_agenda', 30),
+        ];
+
+        Log::info('Payload final para createBoleto', $dados);
+
+        $response = $this->interService->createBoleto($dados);
+        $boleto = $this->interService->getCobranca($response['codigoSolicitacao']);
+
+        return response()->json(['boleto' => $boleto]);
+
+    } catch (\Exception $e) {
+        Log::error('Erro ao criar boleto: ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ]);
+        return response()->json(['error' => 'Erro ao criar boleto: ' . $e->getMessage()], 400);
+    }
+}
+
+
+public function boletosPainel(Request $request)
+{
+    $this->checkAdmin();
+
+    $clientes = User::where('ativo', true)->get();
+
+    $pagamentos = Pagamento::with('contrato.cliente')
+        ->when($request->filled('cliente'), function ($q) use ($request) {
+            $q->whereHas('contrato', fn($qq) => $qq->where('cliente_id', $request->cliente));
+        })
+        ->when($request->filled('status'), fn($q) => $q->where('status', $request->status))
+        ->when($request->filled('data_ini'), fn($q) => $q->whereDate('vencimento', '>=', $request->data_ini))
+        ->when($request->filled('data_fim'), fn($q) => $q->whereDate('vencimento', '<=', $request->data_fim))
+        ->orderByDesc('vencimento')
+        ->paginate(20);
+
+    return view('boletos.painel', compact('pagamentos', 'clientes'));
+}
+
+public function destroy(Pagamento $pagamento)
+{
+    $this->checkAdmin();
+
+    try {
+        $pagamento->delete();
+        return response()->json(['success' => true]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+}
+
 
 }

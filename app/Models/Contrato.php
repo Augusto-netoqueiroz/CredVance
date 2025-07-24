@@ -9,18 +9,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Contrato extends Model
 {
     protected $fillable = [
-        'cliente_id',
-        'consorcio_id',
-        'status',
-        'quantidade_cotas',
-        'aceito_em',
-        'ip',
-        'navegador_info',
-        'resolucao',
-        'latitude',
-        'longitude',
-        'pdf_contrato',
-    ];
+    'cliente_id',
+    'consorcio_id',
+    'status',
+    'quantidade_cotas',
+    'dia_vencimento', // 👈 novo campo
+    'aceito_em',
+    'ip',
+    'navegador_info',
+    'resolucao',
+    'latitude',
+    'longitude',
+    'pdf_contrato',
+];
     
 
     public function cliente(): BelongsTo

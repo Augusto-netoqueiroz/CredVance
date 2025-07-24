@@ -104,17 +104,20 @@ class ContratoController extends Controller
 
     // Criar contrato
     try {
-        $contrato = Contrato::create([
-            'cliente_id'       => $cliente->id,
-            'consorcio_id'     => $request->consorcio_id,
-            'quantidade_cotas' => $request->quantidade_cotas,
-            'aceito_em'        => \Carbon\Carbon::parse($request->data_aceite)->setTimezone(config('app.timezone'))->format('Y-m-d H:i:s'),
-            'ip'               => $request->ip(),
-            'navegador_info'   => $request->navegador_info,
-            'resolucao'        => $request->resolucao_tela,
-            'latitude'         => $request->latitude,
-            'longitude'        => $request->longitude,
-        ]);
+                    $contrato = Contrato::create([
+                'cliente_id'       => $cliente->id,
+                'consorcio_id'     => $request->consorcio_id,
+                'quantidade_cotas' => $request->quantidade_cotas,
+                'dia_vencimento'   => $request->dia_vencimento, // ✅ ESTA LINHA É ESSENCIAL
+                'aceito_em'        => \Carbon\Carbon::parse($request->data_aceite)
+                                        ->setTimezone(config('app.timezone'))
+                                        ->format('Y-m-d H:i:s'),
+                'ip'               => $request->ip(),
+                'navegador_info'   => $request->navegador_info,
+                'resolucao'        => $request->resolucao_tela,
+                'latitude'         => $request->latitude,
+                'longitude'        => $request->longitude,
+            ]);
 
         \Log::info('Contrato criado com sucesso', ['contrato_id' => $contrato->id]);
         ActivityLoggerService::registrar(

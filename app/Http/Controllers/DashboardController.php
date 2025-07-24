@@ -29,7 +29,7 @@ class DashboardController extends Controller
         // Indicadores principais
         $cotasVendidas = Contrato::sum('quantidade_cotas');
         $contratosCount = Contrato::where('status', 'ativo')->count();
-        $faturamentoMes = Pagamento::where('status', 'pago')
+        $faturamentoMes = Pagamento::where('status', 'recebido')  // alterado aqui
             ->whereMonth('vencimento', now()->month)
             ->whereYear('vencimento', now()->year)
             ->sum('valor');
@@ -59,7 +59,7 @@ class DashboardController extends Controller
 
             $pago = Pagamento::whereMonth('vencimento', $data->month)
                 ->whereYear('vencimento', $data->year)
-                ->where('status', 'pago')
+                ->where('status', 'recebido') // alterado aqui
                 ->sum('valor');
 
             $pendente = Pagamento::whereMonth('vencimento', $data->month)
@@ -85,8 +85,6 @@ class DashboardController extends Controller
             'graficoFaturamentoPendente'
         ));
     }
-
-    // (os métodos detalhesCotas, detalhesContratos, detalhesFaturamento, detalhesPendentes seguem abaixo como já estão no seu código atual)
 
     public function detalhesCotas(Request $request)
     {
@@ -152,7 +150,7 @@ class DashboardController extends Controller
     public function detalhesFaturamento(Request $request)
     {
         $collection = Pagamento::with('contrato.cliente')
-            ->where('status', 'pago')
+            ->where('status', 'recebido') // alterado aqui
             ->orderByDesc('created_at')
             ->limit(10)
             ->get()

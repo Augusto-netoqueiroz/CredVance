@@ -29,18 +29,20 @@
                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead class="bg-gray-100 dark:bg-gray-700">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pagamento ID</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contrato</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enviado</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Envio</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aberto</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Abertura</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase max-w-xs break-words">IP</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase max-w-xs break-words">User Agent</th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
-                        </tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Pagamento ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contrato</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase" style="max-width: 14rem; min-width: 14rem;">PIX</th> {{-- Nova coluna PIX com largura fixa --}}
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Enviado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Envio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Aberto</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Data Abertura</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase max-w-xs break-words">IP</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase max-w-xs break-words">User Agent</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Ações</th>
+                            </tr>
+
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse ($logs as $log)
@@ -49,6 +51,33 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->pagamento_id }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->contrato_id }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->cliente->name ?? 'N/A' }}</td>
+
+                                {{-- Coluna PIX com botão copiar --}}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200 max-w-xs overflow-hidden text-ellipsis" style="max-width: 14rem; white-space: nowrap;">
+    @php
+        $pixCode = $log->pix ?? ($log->pagamento->pix ?? null);
+    @endphp
+
+    @if(!empty($pixCode))
+        <div class="flex items-center space-x-2">
+            <span id="pix-code-{{ $log->id }}" style="display: inline-block; max-width: 12rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
+                {{ $pixCode }}
+            </span>
+            <button 
+                class="copy-pix-btn px-2 py-1 bg-gray-200 rounded hover:bg-gray-300"
+                data-clipboard-target="#pix-code-{{ $log->id }}"
+                title="Copiar PIX"
+                type="button"
+            >
+                📋
+            </button>
+        </div>
+    @else
+        <span class="text-gray-400">-</span>
+    @endif
+</td>
+
+
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->enviado ? 'Sim' : 'Não' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ optional($log->enviado_em)->format('d/m/Y H:i') ?? '-' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-200">{{ $log->aberto ? 'Sim' : 'Não' }}</td>
@@ -69,7 +98,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="text-center p-4 text-sm text-gray-500 dark:text-gray-400">Nenhum log encontrado.</td>
+                                <td colspan="12" class="text-center p-4 text-sm text-gray-500 dark:text-gray-400">Nenhum log encontrado.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -150,6 +179,7 @@
 
     <script>
       document.addEventListener('DOMContentLoaded', () => {
+        // Script para expandir output dos logs cron
         document.querySelectorAll('.output-preview').forEach(div => {
           div.style.maxHeight = '3rem'; // inicial limita a 3rem (~3 linhas)
           div.style.overflow = 'hidden';
@@ -161,6 +191,23 @@
               div.style.maxHeight = '3rem';
             } else {
               div.style.maxHeight = 'none';
+            }
+          });
+        });
+
+        // Script para copiar código PIX
+        document.querySelectorAll('.copy-pix-btn').forEach(button => {
+          button.addEventListener('click', () => {
+            const targetSelector = button.getAttribute('data-clipboard-target');
+            const pixCodeElement = document.querySelector(targetSelector);
+            if (pixCodeElement) {
+              const pixText = pixCodeElement.textContent.trim();
+              navigator.clipboard.writeText(pixText).then(() => {
+                button.textContent = '✔️';
+                setTimeout(() => button.textContent = '📋', 1500);
+              }).catch(() => {
+                alert('Erro ao copiar o código PIX.');
+              });
             }
           });
         });

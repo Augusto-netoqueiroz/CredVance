@@ -19,105 +19,118 @@ class EnvioBoletoDiarioJob implements ShouldQueue
 
     public function handle()
     {
-        $outputLog = []; // acumula mensagens para gravar no log
+        $outputLog = [];
 
-        $logInfo = function($msg) use (&$outputLog) {
-            $outputLog[] = $msg;
+        $logInfo = function ($msg) use (&$outputLog) {
+            $outputLog[] = "[INFO] " . $msg;
             Log::info($msg);
         };
 
-        $logWarn = function($msg) use (&$outputLog) {
-            $outputLog[] = $msg;
+        $logWarn = function ($msg) use (&$outputLog) {
+            $outputLog[] = "[WARN] " . $msg;
             Log::warning($msg);
         };
 
-        $logError = function($msg) use (&$outputLog) {
-            $outputLog[] = $msg;
+        $logError = function ($msg) use (&$outputLog) {
+            $outputLog[] = "[ERROR] " . $msg;
             Log::error($msg);
         };
 
         $logInfo('Iniciando job EnvioBoletoDiarioJob');
 
-        $enviadosHoje = 0;
-
         try {
-            $hoje = now()->startOfDay();
-            $limite = now()->addDays(10)->endOfDay();
+            $inicio = now()->subDays(10)->startOfDay();
+            $fim = now()->addDays(10)->endOfDay();
 
-            $logInfo("Buscando pagamentos com vencimento entre {$hoje} e {$limite}");
+            $logInfo("Buscando pagamentos no período {$inicio} até {$fim} para verificar status");
 
-            $pagamentos = Pagamento::with('cliente', 'contrato')
-                ->whereNull('data_pagamento')
-                ->whereBetween('vencimento', [$hoje, $limite])
+            $pagamentos = Pagamento::with('contrato.cliente')
+                ->whereBetween('vencimento', [$inicio, $fim])
                 ->get();
 
-            $logInfo("Pagamentos encontrados: {$pagamentos->count()}");
+            $logInfo("Pagamentos encontrados para checagem: {$pagamentos->count()}");
 
-            if ($pagamentos->isEmpty()) {
-                $logWarn('Nenhum pagamento encontrado para enviar.');
-            } else {
-                foreach ($pagamentos as $pag) {
-                    $logInfo("Processando pagamento ID {$pag->id} vencimento {$pag->vencimento}");
+            foreach ($pagamentos as $pag) {
+                $logInfo("========================================================");
+                $logInfo("Processando pagamento ID {$pag->id} - contrato ID " . ($pag->contrato->id ?? 'N/A'));
+                $logInfo("Status atual: {$pag->status}");
 
-                    $logHoje = BoletoLog::where('pagamento_id', $pag->id)
-                        ->whereDate('enviado_em', $hoje)
-                        ->first();
+                $novoStatus = $this->verificarStatusPagamento($pag);
+                $logInfo("Status retornado da verificação: {$novoStatus}");
 
-                    if ($logHoje && $logHoje->enviado) {
-                        $logInfo("Pagamento ID {$pag->id} já teve boleto enviado hoje. Pulando.");
-                        continue;
-                    }
-
-                    if (!$pag->cliente || !$pag->cliente->email) {
-                        $logWarn("Pagamento ID {$pag->id} sem cliente ou email válido. Pulando.");
-                        continue;
-                    }
-
-                    $logInfo("Enviando email para {$pag->cliente->email}");
-
-                    $dados = [
-                        'boleto' => $pag,
-                        'cliente' => $pag->cliente,
-                        'contrato' => $pag->contrato,
-                    ];
-
-                    try {
-                        Mail::send('emails.boleto_enviado', $dados, function ($message) use ($pag) {
-                            $message->to($pag->cliente->email)
-                                ->subject('Seu boleto está disponível - CredVance');
-
-                            if (!empty($pag->boleto_path)) {
-                                $pdfPath = storage_path('app/private/' . $pag->boleto_path);
-                                if (file_exists($pdfPath)) {
-                                    $message->attach($pdfPath);
-                                    Log::info("PDF anexado ao email para pagamento ID {$pag->id}");
-                                } else {
-                                    Log::warning("PDF não encontrado para pagamento ID {$pag->id} no caminho {$pdfPath}");
-                                }
-                            } else {
-                                Log::warning("Pagamento ID {$pag->id} não possui boleto_path.");
-                            }
-                        });
-
-                        BoletoLog::updateOrCreate(
-                            ['pagamento_id' => $pag->id, 'enviado_em' => $hoje],
-                            [
-                                'contrato_id' => $pag->contrato->id ?? null,
-                                'cliente_id' => $pag->cliente->id ?? null,
-                                'enviado' => true,
-                                'enviado_em' => now(),
-                            ]
-                        );
-
-                        $logInfo("Log salvo para pagamento ID {$pag->id}");
-                        $enviadosHoje++;
-                    } catch (\Exception $e) {
-                        $logError("Erro ao enviar email para pagamento ID {$pag->id}: {$e->getMessage()}");
-                    }
+                if ($novoStatus !== $pag->status) {
+                    $logInfo("Atualizando status pagamento ID {$pag->id} de {$pag->status} para {$novoStatus}");
+                    $pag->status = $novoStatus;
+                    $pag->save();
+                } else {
+                    $logInfo("Status do pagamento ID {$pag->id} permanece {$pag->status}");
                 }
+
+                // ** FILTRO PRINCIPAL PARA NÃO ENVIAR BOLETO PARA PAGAMENTOS RECEBIDOS OU PAGOS **
+                if (in_array($pag->status, ['recebido', 'pago'])) {
+                    $logInfo("Pagamento ID {$pag->id} com status '{$pag->status}' - não envia boleto.");
+                    continue;
+                }
+
+                $logHoje = BoletoLog::where('pagamento_id', $pag->id)
+                    ->whereDate('enviado_em', now()->toDateString())
+                    ->first();
+
+                if ($logHoje && $logHoje->enviado) {
+                    $logInfo("Pagamento ID {$pag->id} já teve boleto enviado hoje. Pulando.");
+                    continue;
+                }
+
+                if (!$pag->contrato || !$pag->contrato->cliente || !$pag->contrato->cliente->email) {
+                    $logWarn("Pagamento ID {$pag->id} sem cliente ou email válido. Pulando.");
+                    continue;
+                }
+
+                $logInfo("Enviando email para {$pag->contrato->cliente->email}");
+
+                $dados = [
+                    'boleto' => $pag,
+                    'cliente' => $pag->contrato->cliente,
+                    'contrato' => $pag->contrato,
+                ];
+
+                try {
+                    Mail::send('emails.boleto_enviado', $dados, function ($message) use ($pag, $logInfo, $logWarn) {
+                        $message->to($pag->contrato->cliente->email)
+                            ->subject('Seu boleto está disponível - CredVance');
+
+                        if (!empty($pag->boleto_path)) {
+                            $pdfPath = storage_path('app/private/' . $pag->boleto_path);
+                            if (file_exists($pdfPath)) {
+                                $message->attach($pdfPath);
+                                $logInfo("PDF anexado ao email para pagamento ID {$pag->id}");
+                            } else {
+                                $logWarn("PDF não encontrado para pagamento ID {$pag->id} no caminho {$pdfPath}");
+                            }
+                        } else {
+                            $logWarn("Pagamento ID {$pag->id} não possui boleto_path.");
+                        }
+                    });
+
+                    BoletoLog::updateOrCreate(
+                        ['pagamento_id' => $pag->id, 'enviado_em' => now()->startOfDay()],
+                        [
+                            'contrato_id' => $pag->contrato->id ?? null,
+                            'cliente_id' => $pag->contrato->cliente->id ?? null,
+                            'enviado' => true,
+                            'enviado_em' => now(),
+                        ]
+                    );
+
+                    $logInfo("Email enviado e log salvo para pagamento ID {$pag->id}");
+                } catch (\Exception $e) {
+                    $logError("Erro ao enviar email para pagamento ID {$pag->id}: {$e->getMessage()}");
+                }
+
+                $logInfo("--------------------------------------------------------");
             }
 
-            $logInfo("Processamento finalizado. Total de emails enviados: {$enviadosHoje}");
+            $logInfo("Processamento finalizado. Total de pagamentos processados: {$pagamentos->count()}");
 
             CronLog::create([
                 'command' => 'EnvioBoletoDiarioJob',
@@ -126,8 +139,7 @@ class EnvioBoletoDiarioJob implements ShouldQueue
                 'executed_at' => now(),
             ]);
         } catch (\Exception $ex) {
-            $msgErro = "Erro geral no job: {$ex->getMessage()}";
-            $logError($msgErro);
+            $logError("Erro geral no job: {$ex->getMessage()}");
 
             CronLog::create([
                 'command' => 'EnvioBoletoDiarioJob',
@@ -136,5 +148,11 @@ class EnvioBoletoDiarioJob implements ShouldQueue
                 'executed_at' => now(),
             ]);
         }
+    }
+
+    private function verificarStatusPagamento(Pagamento $pagamento): string
+    {
+        // Aqui sua lógica para checar/atualizar status do pagamento
+        return $pagamento->status;
     }
 }

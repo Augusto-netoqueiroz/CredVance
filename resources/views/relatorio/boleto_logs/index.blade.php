@@ -62,4 +62,25 @@
             </div>
         </div>
     </div>
+
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.copy-pix-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            const targetSelector = button.getAttribute('data-clipboard-target');
+            const pixCodeElement = document.querySelector(targetSelector);
+            if (pixCodeElement) {
+                const pixText = pixCodeElement.textContent.trim();
+                navigator.clipboard.writeText(pixText).then(() => {
+                    button.textContent = '✔️';
+                    setTimeout(() => button.textContent = '📋', 1500);
+                }).catch(() => {
+                    alert('Erro ao copiar o código PIX.');
+                });
+            }
+        });
+    });
+});
+</script>
+
 </x-app-layout>

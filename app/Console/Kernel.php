@@ -19,7 +19,8 @@ class Kernel extends ConsoleKernel
         // Registro explícito dos comandos (não obrigatório, mas mantive seu código)
         \App\Console\Commands\TesteEnvioBoleto::class;
         \App\Console\Commands\EnviarBoletoEmail::class;
-        \App\Console\Commands\EnvioBoletoDiario::class; // comando que despacha o job
+        \App\Console\Commands\EnvioBoletoDiario::class;
+        \App\Console\Commands\DispatchDownloadBoletos::class; // comando que despacha o job
     }
 
     /**
@@ -30,7 +31,6 @@ class Kernel extends ConsoleKernel
         $schedule->command('pagamentos:atualizar-status')->hourly();
         $schedule->command('pagamentos:download-boletos')->everyMinute();
         $schedule->command('pagamento:reemite-boleto --all')->everyFiveMinutes();
-        $schedule->command('envioboletodiario')->cron('0 8,14,20 * * *');
         $schedule->command('queue:retry all')->everyFiveMinutes();
         $schedule->job(new \App\Jobs\CheckOverduePaymentsJob())->everyMinute();
     }

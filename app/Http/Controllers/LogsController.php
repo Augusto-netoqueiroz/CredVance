@@ -34,33 +34,37 @@ public function index(Request $request)
 
 public function downloadBoletolog($pagamentoId)
 {
-    // Busca o pagamento pelo id
     $pagamento = Pagamento::find($pagamentoId);
 
     if (!$pagamento) {
+        \Log::warning("Pagamento ID {$pagamentoId} não encontrado.");
         abort(404, 'Pagamento não encontrado.');
     }
 
     if (empty($pagamento->boleto_path)) {
+        \Log::warning("Pagamento ID {$pagamentoId} não possui boleto_path definido.");
         abort(404, 'Arquivo do boleto não está disponível.');
     }
 
-    // Caminho completo do arquivo na storage privada
     $filePath = storage_path('app/private/' . $pagamento->boleto_path);
 
+    \Log::info("Tentando acessar arquivo do boleto para pagamento ID {$pagamentoId}: {$filePath}");
+
     if (!file_exists($filePath)) {
+        \Log::error("Arquivo do boleto não encontrado no servidor para pagamento ID {$pagamentoId}: {$filePath}");
         abort(404, 'Arquivo do boleto não encontrado no servidor.');
     }
 
-    // Nome do arquivo para download
     $fileName = 'boleto-contrato-' . $pagamento->contrato_id . '.pdf';
 
-    // Força o download do arquivo
     return response()->download($filePath, $fileName, [
         'Content-Type' => 'application/pdf',
         'Content-Disposition' => 'attachment; filename="' . $fileName . '"'
     ]);
 }
+
+
+
 
 
 
