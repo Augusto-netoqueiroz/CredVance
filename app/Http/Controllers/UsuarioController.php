@@ -12,24 +12,27 @@ use Illuminate\Support\Facades\Auth;
 class UsuarioController extends Controller
 {
     // Registro de atividade para a listagem de usuários
-    public function index()
-    {
-
-        if (auth()->user()->role !== 'admin') {
+   public function index()
+{
+    if (auth()->user()->role !== 'admin') {
         return redirect()
             ->route('Inicio')
             ->with('error', 'Você não tem permissão para acessar essa página');
     }
 
-        $usuarios = User::where('ativo', 1)->paginate(10);
+    // Retorna todos os usuários ativos (sem paginação)
+    $usuarios = User::where('ativo', 1)
+                    ->orderBy('name')
+                    ->get();
 
-         ActivityLoggerService::registrar(
-            'Usuário',
-            'Abriu a página de Usuários.'
-        );
+    ActivityLoggerService::registrar(
+        'Usuário',
+        'Abriu a página de Usuários.'
+    );
 
-        return view('usuarios.index', compact('usuarios'));
-    }
+    return view('usuarios.index', compact('usuarios'));
+}
+
 
     // Registro de atividade para o cadastro de usuário
     public function create()

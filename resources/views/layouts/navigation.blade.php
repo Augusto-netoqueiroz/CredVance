@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+<nav x-data="{ open: false, darkMode: false }" class="bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <!-- Lado Esquerdo (Logo e Links) -->
@@ -12,49 +12,61 @@
 
                 <!-- Menus Esquerda (versão desktop) -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-    <!-- Link comum -->
-    <x-nav-link :href="route('Inicio')" :active="request()->routeIs('Inicio')">
-        {{ __('Início') }}
-    </x-nav-link>
+                    <x-nav-link :href="route('Inicio')" :active="request()->routeIs('Inicio')">
+                        {{ __('Início') }}
+                    </x-nav-link>
 
-    <!-- Admin -->
-    @if (auth()->check() && auth()->user()->role === 'admin')
-        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-            {{ __('Dashboard') }}
-        </x-nav-link>
-        <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
-            {{ __('Usuários') }}
-        </x-nav-link>
-        <x-nav-link :href="route('logs.index')" :active="request()->routeIs('logs.index')">
-            {{ __('Logs') }}
-        </x-nav-link>
-    @endif
+                    @if (auth()->check() && auth()->user()->role === 'admin')
+                        <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                            {{ __('Dashboard') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('usuarios.index')" :active="request()->routeIs('usuarios.*')">
+                            {{ __('Usuários') }}
+                        </x-nav-link>
+                        <x-nav-link :href="route('logs.index')" :active="request()->routeIs('logs.index')">
+                            {{ __('Logs') }}
+                        </x-nav-link>
+                    @endif
 
-    <!-- Parceiros (admin ou parceiro) -->
-    @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'parceiro']))
-        @if (auth()->user()->role === 'admin')
-            <x-nav-link :href="route('admin.parceiros.index')" :active="request()->routeIs('admin.parceiros.*')">
-                {{ __('Parceiros') }}
-            </x-nav-link>
-        @else
-            <x-nav-link :href="route('parceiro.index')" :active="request()->routeIs('parceiro.index')">
-                {{ __('Parceiros') }}
-            </x-nav-link>
-        @endif
-    @endif
-</div>
-
+                    @if (auth()->check() && in_array(auth()->user()->role, ['admin', 'parceiro']))
+                        @if (auth()->user()->role === 'admin')
+                            <x-nav-link :href="route('admin.parceiros.index')" :active="request()->routeIs('admin.parceiros.*')">
+                                {{ __('Parceiros') }}
+                            </x-nav-link>
+                        @else
+                            <x-nav-link :href="route('parceiro.index')" :active="request()->routeIs('parceiro.index')">
+                                {{ __('Parceiros') }}
+                            </x-nav-link>
+                        @endif
+                    @endif
+                </div>
             </div>
 
-            <!-- Lado Direito (Perfil e Dropdown) - versão desktop -->
-            <div class="hidden sm:flex sm:items-center">
+            <!-- Lado Direito (Perfil, Alternar Tema e Dropdown) -->
+            <div class="hidden sm:flex sm:items-center space-x-4">
+                <!-- Alternar Tema -->
+                <button @click="darkMode = !darkMode"
+                        class="inline-flex items-center px-3 py-2 text-sm text-gray-500 dark:text-gray-300 
+                               hover:text-gray-700 dark:hover:text-gray-100 transition ease-in-out duration-150"
+                >
+                    <svg x-show="!darkMode" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M20.354 15.354A9 9 0 018.646 3.646A9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                    <svg x-show="darkMode" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707
+                                 m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    {{ __('Tema') }}
+                </button>
+
+                <!-- Dropdown Perfil -->
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button
-                            class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium 
-                                   rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 
-                                   transition ease-in-out duration-150"
-                        >
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium 
+                                       rounded-md text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 
+                                       transition ease-in-out duration-150">
                             <div>{{ Auth::user()->name }}</div>
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
@@ -73,22 +85,6 @@
                         <x-dropdown-link :href="route('profile.edit')">
                             {{ __('Perfil') }}
                         </x-dropdown-link>
-                        
-                        <!-- Alternar Tema (opcional) -->
-                        <button id="theme-toggle"
-                                class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 
-                                       dark:hover:bg-gray-600 transition duration-150 ease-in-out flex items-center"
-                        >
-                            <svg id="theme-toggle-light-icon" class="hidden w-5 h-5 mr-2" fill="currentColor"
-                                 viewBox="0 0 20 20">
-                                <path d="..."/>
-                            </svg>
-                            <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5 mr-2" fill="currentColor"
-                                 viewBox="0 0 20 20">
-                                <path d="..."/>
-                            </svg>
-                            {{ __('Alternar Tema') }}
-                        </button>
 
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
@@ -107,20 +103,13 @@
                         class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 
                                hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 
                                focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 focus:text-gray-500
-                               transition duration-150 ease-in-out"
-                >
+                               transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': !open }" 
-                              class="inline-flex" 
-                              stroke-linecap="round" 
-                              stroke-linejoin="round" 
-                              stroke-width="2" 
+                              class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                               d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': !open, 'inline-flex': open }" 
-                              class="hidden" 
-                              stroke-linecap="round" 
-                              stroke-linejoin="round" 
-                              stroke-width="2" 
+                              class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
                               d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </button>
@@ -130,14 +119,11 @@
 
     <!-- Menu suspenso (versão mobile) -->
     <div :class="{'block': open, 'hidden': ! open}" class="sm:hidden">
-        <!-- Links da esquerda em mobile -->
         <div class="pt-2 pb-3 space-y-1">
-            <!-- Link comum a todos -->
             <x-responsive-nav-link :href="route('Inicio')" :active="request()->routeIs('Inicio')">
                 {{ __('Início') }}
             </x-responsive-nav-link>
 
-            <!-- Só mostra se for admin -->
             @if (auth()->check() && auth()->user()->role === 'admin')
                 <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                     {{ __('Dashboard') }}
@@ -148,7 +134,7 @@
             @endif
         </div>
 
-        <!-- Opções de perfil (versão mobile) -->
+        <!-- Perfil + Alternar Tema no mobile -->
         <div class="pt-4 pb-1 border-t border-gray-200 dark:border-gray-600">
             <div class="px-4">
                 <div class="font-medium text-base text-gray-800 dark:text-gray-200">{{ Auth::user()->name }}</div>
@@ -157,21 +143,28 @@
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Perfil') }}
                 </x-responsive-nav-link>
-                
-                <!-- Alternar Tema (opcional) -->
-                <button id="theme-toggle-mobile"
+
+                <!-- Alternar Tema mobile -->
+                <button @click="darkMode = !darkMode"
                         class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 
-                               dark:hover:bg-gray-600 transition duration-150 ease-in-out flex items-center"
-                >
-                    <!-- coloque aqui os ícones do tema, se desejar -->
-                    {{ __('Alternar Tema') }}
+                               dark:hover:bg-gray-600 transition duration-150 ease-in-out flex items-center">
+                    <svg x-show="!darkMode" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M20.354 15.354A9 9 0 018.646 3.646A9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+                    </svg>
+                    <svg x-show="darkMode" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707
+                                 m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    {{ __('Tema') }}
                 </button>
 
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <x-responsive-nav-link :href="route('logout')"
                                            onclick="event.preventDefault(); this.closest('form').submit();">
-                        {{ __('Log Out') }}
+                        {{ __('Sair') }}
                     </x-responsive-nav-link>
                 </form>
             </div>

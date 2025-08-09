@@ -159,7 +159,7 @@
         <div class="flex justify-between mt-6">
           <button type="button" id="btnAnterior" disabled class="px-4 py-2 rounded bg-gray-300 text-gray-700 hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed">← Anterior</button>
           <button type="button" id="btnProximo" class="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700">Próximo →</button>
-          <button type="submit" id="btnFinalizar" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 hidden">Finalizar</button>
+          <button type="button" id="btnFinalizar" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 hidden">Finalizar</button>
         </div>
       </form>
     </div>
@@ -170,6 +170,43 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-80 text-center border border-red-300 dark:border-red-500">
       <p id="miniModalErroMsg" class="text-sm text-red-700 dark:text-red-300 font-medium mb-4">Erro</p>
       <button onclick="fecharMiniModalErro()" class="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700 text-sm">OK</button>
+    </div>
+  </div>
+
+  <!-- Modal de Aviso (Confirmação de Parcelas) -->
+  <div id="modalAviso" class="fixed inset-0 hidden items-center justify-center" style="z-index:2100;">
+    <!-- backdrop -->
+    <div id="modalAvisoBackdrop" class="absolute inset-0 bg-black bg-opacity-50"></div>
+    <!-- card -->
+    <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-200 dark:border-gray-700">
+      <div class="p-6">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Atenção</h3>
+        <p id="modalAvisoTexto" class="text-sm text-gray-700 dark:text-gray-200 mb-4">
+          <!-- preenchido via JS: “você está contratando X cotas...” -->
+        </p>
+
+        <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+            <thead class="bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
+              <tr>
+                <th class="px-3 py-2 text-left font-medium">#</th>
+                <th class="px-3 py-2 text-left font-medium">Vencimento</th>
+                <th class="px-3 py-2 text-right font-medium">Valor (R$)</th>
+              </tr>
+            </thead>
+            <tbody id="modalTabelaParcelas" class="divide-y divide-gray-100 dark:divide-gray-700 text-gray-800 dark:text-gray-100">
+              <!-- linhas via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="modalAvisoObs" class="text-xs text-gray-500 dark:text-gray-400 mt-3"></div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" id="btnVoltarModal" class="px-4 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">Voltar</button>
+          <button type="button" id="btnConfirmarModal" class="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700">Confirmar e assinar</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -247,106 +284,205 @@
       return true;
     }
 
-    // Função que preenche o resumo detalhado do contrato no step 3
-function gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano) {
-  const parcelas = [];
-  let valorAtual = parcelaInicial;
-  let count = 0;
+    // ====== Lógica de parcelas / resumo ======
+    function gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano) {
+      const parcelas = [];
+      let valorAtual = parcelaInicial;
+      let count = 0;
 
-  for (let i = 1; i <= prazo; i++) {
-    parcelas.push(valorAtual);
+      for (let i = 1; i <= prazo; i++) {
+        parcelas.push(valorAtual);
 
-    if (tipoPlano === "24meses") {
-      count++;
-      if (count === repeteMeses) {
-        valorAtual = Math.max(valorAtual - decremento, 0);
-        count = 0;
+        if (tipoPlano === "24meses") {
+          count++;
+          if (count === repeteMeses) {
+            valorAtual = Math.max(valorAtual - decremento, 0);
+            count = 0;
+          }
+        } else if (tipoPlano === "12meses") {
+          valorAtual = Math.max(valorAtual - decremento, 0);
+        }
       }
-    } else if (tipoPlano === "12meses") {
-      // diminui todo mês
-      valorAtual = Math.max(valorAtual - decremento, 0);
+      return parcelas;
     }
-  }
-  return parcelas;
-}
 
-function preencherResumo() {
-  // Dados do cliente
-  const clienteOpt = document.getElementById('cliente_id');
-  const nome = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.nome : document.getElementById('cliente_dados')?.dataset.nome;
-  const cpf = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.cpf : document.getElementById('cliente_dados')?.dataset.cpf;
-  const email = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.email : document.getElementById('cliente_dados')?.dataset.email;
+    function formatBRL(v) {
+      return Number(v).toFixed(2);
+    }
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    function formatDateBR(d){
+      return pad2(d.getDate()) + '/' + pad2(d.getMonth()+1) + '/' + d.getFullYear();
+    }
 
-  // Dados do plano
-  const planoOpt = document.getElementById('consorcio_id');
-  const planoTexto = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.text : '';
-  const juros = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.dataset.juros : 0;
-  const prazo = planoOpt ? parseInt(planoOpt.options[planoOpt.selectedIndex]?.dataset.prazo) : 24;
-  const parcelaInicial = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.parcelaMensal) : 155;
-  const valorFinal = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.valorFinal) : 0;
+    function preencherResumo() {
+      const clienteOpt = document.getElementById('cliente_id');
+      const nome = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.nome : document.getElementById('cliente_dados')?.dataset.nome;
+      const cpf = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.cpf : document.getElementById('cliente_dados')?.dataset.cpf;
+      const email = clienteOpt ? clienteOpt.options[clienteOpt.selectedIndex]?.dataset.email : document.getElementById('cliente_dados')?.dataset.email;
 
-  // Quantidade de cotas
-  const qtd = parseInt(document.getElementById('quantidade_cotas').value) || 1;
+      const planoOpt = document.getElementById('consorcio_id');
+      const planoTexto = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.text : '';
+      const juros = planoOpt ? planoOpt.options[planoOpt.selectedIndex]?.dataset.juros : 0;
+      const prazo = planoOpt ? parseInt(planoOpt.options[planoOpt.selectedIndex]?.dataset.prazo) : 24;
+      const parcelaInicial = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.parcelaMensal) : 155;
+      const valorFinal = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.valorFinal) : 0;
 
-  // Detectar tipo do plano pelo prazo (ou pode usar outro dado, se quiser)
-  const tipoPlano = prazo === 24 ? "24meses" : "12meses";
+      const qtd = parseInt(document.getElementById('quantidade_cotas').value) || 1;
 
-  // Gerar parcelas
-  const decremento = 5;
-  const repeteMeses = 2;
-  const parcelas = gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano);
+      const tipoPlano = prazo === 24 ? "24meses" : "12meses";
+      const decremento = 5;
+      const repeteMeses = 2;
+      const parcelas = gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano);
 
-  // Calcular total pago (soma das parcelas * qtd)
-  const totalPago = parcelas.reduce((acc, val) => acc + val, 0) * qtd;
+      const totalPago = parcelas.reduce((acc, val) => acc + val, 0) * qtd;
 
-  // Formatar primeira e última parcela
-  const primeiraPar = parcelas[0].toFixed(2);
-  const ultimaPar = parcelas[parcelas.length - 1].toFixed(2);
+      const primeiraPar = parcelas[0].toFixed(2);
+      const ultimaPar = parcelas[parcelas.length - 1].toFixed(2);
 
-  // Calcular vencimento 1ª parcela (hoje + 1 mês)
-  const venc = new Date();
-  venc.setMonth(venc.getMonth() + 1);
-  const dia = String(venc.getDate()).padStart(2, '0');
-  const mes = String(venc.getMonth() + 1).padStart(2, '0');
-  const ano = venc.getFullYear();
+      // 1ª parcela = amanhã
+      const venc1 = new Date();
+      venc1.setDate(venc1.getDate() + 1);
 
-  // Montar HTML do contrato
-  const contratoHTML = `
-    <div>
-      <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
-      <div class="mb-3">
-        <p class="text-xs"><span class="font-medium">Nome:</span> ${nome}</p>
-        <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf}</p>
-        <p class="text-xs"><span class="font-medium">E-mail:</span> ${email}</p>
-        <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${planoTexto.trim()}</p>
-        <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtd}</p>
-      </div>
-      <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
-        <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
-        <div class="grid grid-cols-2 gap-1 text-xs">
-          <p><span class="font-medium">1ª parcela:</span></p>
-          <p class="text-right">R$ ${primeiraPar}</p>
-          <p><span class="font-medium">Última parcela:</span></p>
-          <p class="text-right">R$ ${ultimaPar}</p>
-          <p><span class="font-medium">Total a pagar:</span></p>
-          <p class="text-right">R$ ${totalPago.toFixed(2)}</p>
-          <p><span class="font-medium">Valor final (com ${juros}%):</span></p>
-          <p class="text-right">R$ ${(valorFinal * qtd).toFixed(2)}</p>
-          <p><span class="font-medium">Vencimento 1ª parcela:</span></p>
-          <p class="text-right">${dia}/${mes}/${ano}</p>
+      const contratoHTML = `
+        <div>
+          <h4 class="font-bold text-base text-gray-900 dark:text-white mb-2">CONTRATO DE PARTICIPAÇÃO</h4>
+          <div class="mb-3">
+            <p class="text-xs"><span class="font-medium">Nome:</span> ${nome ?? '-'}</p>
+            <p class="text-xs"><span class="font-medium">CPF:</span> ${cpf ?? '-'}</p>
+            <p class="text-xs"><span class="font-medium">E-mail:</span> ${email ?? '-'}</p>
+            <p class="text-xs mb-2"><span class="font-medium">Plano:</span> ${planoTexto?.trim() ?? '-'}</p>
+            <p class="text-xs"><span class="font-medium">Cotas:</span> ${qtd}</p>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded mb-3">
+            <p class="text-xs font-medium mb-1">Detalhamento Financeiro:</p>
+            <div class="grid grid-cols-2 gap-1 text-xs">
+              <p><span class="font-medium">1ª parcela:</span></p>
+              <p class="text-right">R$ ${primeiraPar}</p>
+              <p><span class="font-medium">Última parcela:</span></p>
+              <p class="text-right">R$ ${ultimaPar}</p>
+              <p><span class="font-medium">Total a pagar:</span></p>
+              <p class="text-right">R$ ${totalPago.toFixed(2)}</p>
+              <p><span class="font-medium">Valor final (com ${juros}%):</span></p>
+              <p class="text-right">R$ ${(valorFinal * qtd).toFixed(2)}</p>
+              <p><span class="font-medium">Venc. 1ª parcela:</span></p>
+              <p class="text-right">${formatDateBR(venc1)}</p>
+            </div>
+          </div>
+          <p class="text-xs font-medium text-center">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
         </div>
-      </div>
-      <p class="text-xs font-medium text-center">Declaro que li, compreendi e estou de acordo com todas as condições acima descritas.</p>
-    </div>
-  `;
+      `;
+      document.getElementById('resumoContrato').innerHTML = contratoHTML;
+    }
 
-  document.getElementById('resumoContrato').innerHTML = contratoHTML;
-}
+    // ====== Modal de aviso (antes do submit) ======
+    const modalAviso = document.getElementById('modalAviso');
+    const modalTabelaParcelas = document.getElementById('modalTabelaParcelas');
+    const modalAvisoTexto = document.getElementById('modalAvisoTexto');
+    const modalAvisoObs = document.getElementById('modalAvisoObs');
+    const btnVoltarModal = document.getElementById('btnVoltarModal');
+    const btnConfirmarModal = document.getElementById('btnConfirmarModal');
 
+    function abrirModalAviso() {
+      modalAviso.classList.remove('hidden');
+      modalAviso.classList.add('flex');
+      document.body.classList.add('modal-open');
+    }
+    function fecharModalAviso() {
+      modalAviso.classList.add('hidden');
+      modalAviso.classList.remove('flex');
+      document.body.classList.remove('modal-open');
+    }
 
+    function montarTabelaParcelasParaModal() {
+      const planoOpt = document.getElementById('consorcio_id');
+      const prazo = planoOpt ? parseInt(planoOpt.options[planoOpt.selectedIndex]?.dataset.prazo) : 24;
+      const parcelaInicial = planoOpt ? parseFloat(planoOpt.options[planoOpt.selectedIndex]?.dataset.parcelaMensal) : 155;
 
+      const diaEscolhido = parseInt(document.getElementById('dia_vencimento').value) || 1;
+      const qtd = parseInt(document.getElementById('quantidade_cotas').value) || 1;
 
-    // Intercepta submit para validar CPF e senha e preencher hidden inputs + localização
+      const tipoPlano = prazo === 24 ? "24meses" : "12meses";
+      const decremento = 5;
+      const repeteMeses = 2;
+      const parcelasUnit = gerarParcelasPrazo(prazo, parcelaInicial, decremento, repeteMeses, tipoPlano);
+
+      // Datas: 1ª = amanhã; seguintes no melhor dia
+      const datas = [];
+      const d1 = new Date();
+      d1.setDate(d1.getDate() + 1);
+      datas.push(new Date(d1));
+
+      for (let i = 2; i <= prazo; i++) {
+        const base = new Date(d1);
+        base.setMonth(base.getMonth() + (i - 1));
+        base.setDate(diaEscolhido); // seguro pois 1..28
+        datas.push(new Date(base));
+      }
+
+      // Preenche a tabela (mostra até 8 primeiras e última se for longo)
+      modalTabelaParcelas.innerHTML = '';
+      const totalLinhas = parcelasUnit.length;
+      const limite = totalLinhas > 10 ? 8 : totalLinhas;
+
+      for (let i = 0; i < limite; i++) {
+        const valor = parcelasUnit[i] * qtd;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-3 py-2">${i+1}</td>
+          <td class="px-3 py-2">${formatDateBR(datas[i])}</td>
+          <td class="px-3 py-2 text-right">${formatBRL(valor)}</td>
+        `;
+        modalTabelaParcelas.appendChild(tr);
+      }
+
+      if (totalLinhas > limite) {
+        const trDots = document.createElement('tr');
+        trDots.innerHTML = `
+          <td class="px-3 py-2">...</td>
+          <td class="px-3 py-2">...</td>
+          <td class="px-3 py-2 text-right">...</td>
+        `;
+        modalTabelaParcelas.appendChild(trDots);
+
+        const lastIdx = totalLinhas - 1;
+        const valorLast = parcelasUnit[lastIdx] * qtd;
+        const trLast = document.createElement('tr');
+        trLast.innerHTML = `
+          <td class="px-3 py-2">${totalLinhas}</td>
+          <td class="px-3 py-2">${formatDateBR(datas[lastIdx])}</td>
+          <td class="px-3 py-2 text-right">${formatBRL(valorLast)}</td>
+        `;
+        modalTabelaParcelas.appendChild(trLast);
+
+        modalAvisoObs.textContent = 'Exibindo prévia. O detalhamento completo está no resumo.';
+      } else {
+        modalAvisoObs.textContent = '';
+      }
+
+      modalAvisoTexto.innerHTML = `
+        Você está contratando <b>${qtd}</b> cota(s). As parcelas serão conforme a programação abaixo:
+      `;
+    }
+
+    // Ao clicar em Finalizar, abrir modal de aviso
+    btnFinalizar.addEventListener('click', () => {
+      // opcional: validar inputs de step 3 mínimos antes de abrir
+      montarTabelaParcelasParaModal();
+      abrirModalAviso();
+    });
+
+    // Fechar modal (voltar)
+    btnVoltarModal.addEventListener('click', fecharModalAviso);
+    document.getElementById('modalAvisoBackdrop').addEventListener('click', fecharModalAviso);
+
+    // Confirmar no modal -> submete o formulário (dispara o fluxo de validação/geo existente)
+    btnConfirmarModal.addEventListener('click', () => {
+      fecharModalAviso();
+      // dispara o submit para cair no handler abaixo
+      document.getElementById('formContrato').requestSubmit();
+    });
+
+    // ====== Submit handler existente (valida CPF/senha, geo, etc.) ======
     document.getElementById('formContrato').addEventListener('submit', async function(event) {
       event.preventDefault();
 
@@ -398,15 +534,17 @@ function preencherResumo() {
       document.getElementById('navegador_info').value = navigator.userAgent;
       document.getElementById('resolucao_tela').value = `${screen.width}x${screen.height}`;
       const now = new Date();
-      document.getElementById('data_aceite').value = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+      document.getElementById('data_aceite').value =
+        now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' +
+        String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' +
+        String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
       document.getElementById('senha_confirm_hidden').value = senha;
 
-      // Obter geolocalização antes de enviar
+      // Geolocalização antes de enviar
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
           document.getElementById('latitude').value = pos.coords.latitude;
           document.getElementById('longitude').value = pos.coords.longitude;
-          // Enviar formulário após preencher localização
           event.target.submit();
         }, error => {
           let msg = "É necessário autorizar a localização para continuar.";

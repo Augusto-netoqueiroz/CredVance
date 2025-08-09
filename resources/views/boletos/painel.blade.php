@@ -1,9 +1,10 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">Painel de Boletos</h2>
-    </x-slot>
+@extends('layouts.app2')
 
+@section('content')
     <div class="py-4 px-6 max-w-7xl mx-auto">
+        {{-- Título --}}
+        <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight mb-6">Painel de Boletos</h2>
+
         {{-- Filtros --}}
         <form method="GET" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-4">
             <select name="cliente" class="form-select border rounded px-2 py-1">
@@ -32,10 +33,10 @@
         </div>
 
         {{-- Tabela --}}
-        <div class="overflow-x-auto bg-white rounded shadow-sm p-3">
-            <table class="table-auto w-full border">
+        <div class="overflow-x-auto bg-white dark:bg-gray-800 rounded shadow-sm p-3">
+            <table class="table-auto w-full border text-sm text-gray-700 dark:text-gray-200">
                 <thead>
-                    <tr class="bg-gray-100">
+                    <tr class="bg-gray-100 dark:bg-gray-700">
                         <th class="border px-2 py-1">ID</th>
                         <th class="border px-2 py-1">Cliente</th>
                         <th class="border px-2 py-1">Valor</th>
@@ -54,7 +55,7 @@
                             <td class="border px-2 py-1">{{ $p->vencimento->format('d/m/Y') }}</td>
                             <td class="border px-2 py-1">{{ ucfirst($p->status) }}</td>
                             <td class="border px-2 py-1 text-xs">{{ $p->codigo_solicitacao }}</td>
-                            <td class="border px-2 py-1">
+                            <td class="border px-2 py-1 space-x-1">
                                 <button class="btn btn-outline-secondary" onclick="abrirUpload({{ $p->id }})">Upload</button>
                                 <button class="btn btn-outline-success" onclick="abrirPago({{ $p->id }})">Pago</button>
                                 <button class="btn btn-outline-danger btn-delete" data-id="{{ $p->id }}">Excluir</button>
@@ -67,7 +68,7 @@
         </div>
     </div>
 
-    <!-- Modal Novo Boleto -->
+    {{-- Modal Novo Boleto --}}
     <dialog id="modalNovoBoleto" class="rounded-md border p-6 w-full max-w-2xl">
         <form method="POST" action="{{ route('boleto.criar') }}">
             @csrf
@@ -101,7 +102,7 @@
         </form>
     </dialog>
 
-    <!-- Modal Upload -->
+    {{-- Modal Upload --}}
     <dialog id="modalUpload" class="rounded-md border p-6 w-full max-w-md">
         <form method="POST" action="{{ route('boleto.upload') }}" enctype="multipart/form-data">
             @csrf
@@ -115,7 +116,7 @@
         </form>
     </dialog>
 
-    <!-- Modal Pago -->
+    {{-- Modal Pago --}}
     <dialog id="modalPago" class="rounded-md border p-6 w-full max-w-md">
         <form method="POST" action="{{ route('boleto.pago') }}" enctype="multipart/form-data">
             @csrf
@@ -132,11 +133,14 @@
         </form>
     </dialog>
 
+    {{-- JS --}}
+    @push('scripts')
     <script>
         function abrirUpload(id) {
             document.getElementById('upload_pagamento_id').value = id;
             document.getElementById('modalUpload').showModal();
         }
+
         function abrirPago(id) {
             document.getElementById('pago_pagamento_id').value = id;
             document.getElementById('modalPago').showModal();
@@ -156,4 +160,5 @@
             });
         });
     </script>
-</x-app-layout>
+    @endpush
+@endsection

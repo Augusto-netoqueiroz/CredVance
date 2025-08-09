@@ -206,10 +206,20 @@ class BoletoController extends Controller
 
 
 
-public function formBusca()
+public function formBusca(Request $request)
 {
-    return view('boletos.remarcar');
+    $this->checkAdmin();
+
+    $pagamentos = Pagamento::with('contrato.cliente')
+        ->whereNotNull('codigo_solicitacao') // opcional: apenas os que têm
+        ->where('status', '!=', 'pago')
+        ->orderByDesc('vencimento')
+        ->limit(50)
+        ->get();
+
+    return view('boletos.remarcar', compact('pagamentos'));
 }
+
 
 public function buscar(Request $request)
 {

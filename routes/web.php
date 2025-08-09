@@ -33,6 +33,8 @@ use App\Http\Controllers\EmailController;
 use App\Http\Controllers\LogsController;
 use App\Http\Controllers\PagamentoController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\Admin\DocSectionController;
+use App\Http\Controllers\Admin\DocArticleController;
 
 
 
@@ -102,6 +104,12 @@ route::get('/forgot2', function () {
 //Template service - rota por enquanto
 route::get('/email2', function () {
     return view('emails.boleto_enviado');
+});
+
+
+//Template service - rota por enquanto
+route::get('/testeapp', function () {
+    return view('layoutteste');
 });
 
 
@@ -665,4 +673,16 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/boletos/pago', [BoletoController::class, 'marcarComoPago'])->name('boleto.pago');
     Route::delete('/boletos/{pagamento}', [BoletoController::class, 'destroy'])->name('boleto.deletar');
     Route::get('/clientes/{id}/dados', [BoletoController::class, 'dadosCliente'])->name('cliente.dados');
+});
+
+
+
+Route::prefix('admin/docs')->middleware(['auth'])->group(function () {
+    Route::resource('sections', \App\Http\Controllers\Admin\DocSectionController::class);
+    Route::resource('articles', \App\Http\Controllers\Admin\DocArticleController::class);
+});
+
+Route::get('/documentacao2', function () {
+    $sections = \App\Models\DocSection::with('articles')->orderBy('ordem')->get();
+    return view('documentacao.index', compact('sections'));
 });
